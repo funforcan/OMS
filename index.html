@@ -6,12 +6,12 @@
     <title>FunForCan - Sepet</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
-        /* CSS AYNI KALIYOR - DEĞİŞİKLİK YOK */
+        /* CSS AYNI KALIYOR */
         * { box-sizing: border-box; }
         body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f9; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
         header { position: fixed; top: 0; left: 0; width: 100%; background: #111827; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-weight: bold; }
         header .active, #count { background: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 13px; }
-        #content { padding: 70px 10px 20px; }
+        #content { padding: 70px 10px 20px; min-height: 100vh; }
         .container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .card { background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
         .card img { width: 100%; height: 230px; object-fit: cover; }
@@ -29,27 +29,44 @@
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center; }
         .close-btn { margin-top: 15px; padding: 10px 20px; background: #111827; color: white; border: none; border-radius: 6px; width: 100%; }
-		/* Boş Sepet Mesajı Stili */
-.empty-basket {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    margin-top: 100px;
-    padding: 20px;
-}
 
-.empty-basket h2 {
-    color: #4b5563;
-    font-size: 18px;
-    margin-bottom: 10px;
-}
+        /* Loader'ı Ortalamak İçin Stil */
+        .loader-wrapper {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1500;
+        }
 
-.empty-basket .icon {
-    font-size: 50px;
-    margin-bottom: 15px;
-}
+        .loader {
+          width: 50px;
+          aspect-ratio: 1;
+          --_c:no-repeat radial-gradient(farthest-side,#2563eb 92%,#0000);
+          background: 
+            var(--_c) top,
+            var(--_c) left,
+            var(--_c) right,
+            var(--_c) bottom;
+          background-size: 12px 12px;
+          animation: l7 1s infinite;
+        }
+        @keyframes l7 {to{transform: rotate(.5turn)}}
+
+        .empty-basket {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-top: 100px;
+            padding: 20px;
+        }
+        .empty-basket h2 { color: #4b5563; font-size: 18px; margin-bottom: 10px; }
+        .empty-basket .icon { font-size: 50px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -58,10 +75,15 @@
     <span onclick="location.href='anasayfa.html'" style="cursor:pointer;">Anasayfa</span>
     <span class="active">Sepet</span>
     <span onclick="location.href='mesaj.html'" style="cursor:pointer;">Mesajlar</span>
-    <span id="count" onclick="clearBasket()" style="cursor:pointer; background: #ef4444;">0</span>
+    <span id="count" style="background: #2563eb;">0</span>
 </header>
 
-<div id="content"></div>
+<div id="content">
+    <div id="loaderArea" class="loader-wrapper">
+        <div class="loader"></div>
+        <p style="margin-top:10px; font-size:12px; color:#6b7280;">Sepet güncelleniyor...</p>
+    </div>
+</div>
 
 <div id="mainModal" class="modal" onclick="if(event.target===this) closeModal()">
     <div class="modal-content">
@@ -72,48 +94,118 @@
 </div>
 
 <script>
+const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
+const contentDiv = document.getElementById("content");
+
+// 1. CLEAR BASKET FONKSİYONU
 async function clearBasket() {
     const userId = localStorage.getItem("user");
-    if (!userId) {
-        alert("Kullanıcı bulunamadı!");
-        return;
-    }
-
-    const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
-    
-    // Kullanıcıya onay soralım
-    if (!confirm("Sepeti yenilemek istediğinize emin misiniz?")) return;
-
-    // Görsel geri bildirim için sayacı "..." yapalım
-    const countEl = document.getElementById("count");
-    const originalText = countEl.innerText;
-    countEl.innerText = "...";
+    if (!userId) return;
 
     try {
-        // 1. basketData içindeki kullanıcıya ait veriyi sil (DELETE)
         await fetch(`${baseDbUrl}/basketData/${userId}.json`, { method: 'DELETE' });
-
-        // 2. UserList içindeki refresh değerini true yap (PATCH)
-        // Bu işlem ana sistemin yeni verileri yüklemesini tetikler.
         await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
             method: 'PATCH',
             body: JSON.stringify({ refresh: true })
         });
-
-        alert("Yenileme talebi gönderildi. Sepetiniz birazdan güncellenecektir.");
-        
-        // Sayfayı reload et veya veriyi tekrar yükle
-        loadData();
-
+        console.log("Sıfırlama talebi gönderildi.");
     } catch (err) {
-        console.error("İşlem hatası:", err);
-        alert("Bir hata oluştu.");
-        countEl.innerText = originalText;
+        console.error("Sıfırlama hatası:", err);
     }
 }
-const contentDiv = document.getElementById("content");
 
-// Sayaç Güncelleme
+// 2. VERİ ÇEKME VE ZAMANASIMI YÖNETİMİ
+async function startApp() {
+    const userId = localStorage.getItem("user");
+    if (!userId) return location.href = "anasayfa.html";
+
+    // Arka planda sepeti temizle
+    await clearBasket();
+
+    let dataReceived = false;
+
+    // 10 Saniyelik Zaman Aşımı Kontrolü
+    const timeout = setTimeout(() => {
+        if (!dataReceived) {
+            showEmptyBasket();
+        }
+    }, 5000);
+
+    // Veriyi çekmek için periyodik kontrol veya tek seferlik istek
+    // (Firebase refresh true sonrası sistemin veri basması için biraz beklemek gerekebilir)
+    // Burada loadData'yı veri gelene kadar kısa aralıklarla deneyebiliriz:
+    
+    const checkInterval = setInterval(async () => {
+        const items = await fetchBasketItems(userId);
+        if (items && items.length > 0) {
+            dataReceived = true;
+            clearInterval(checkInterval);
+            clearTimeout(timeout);
+            renderBasket(items);
+        }
+    }, 2000); // Her 2 saniyede bir kontrol et
+}
+
+async function fetchBasketItems(userId) {
+    try {
+        const res = await fetch(`${baseDbUrl}/basketData/${userId}.json`);
+        const data = await res.json();
+        return data || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function renderBasket(items) {
+    document.getElementById("count").innerText = items.length + " ürün";
+    contentDiv.innerHTML = `<div class="container">${items.map(p => {
+        const safeDesc = p.description.replace(/'/g, "\\'");
+        return `
+<div class="card" onclick="handleDoubleClick('${p.orderProductId}')">
+    <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/784/1080/")}" alt="">
+    <div class="card-content">
+        <div class="brand">${p.brand}</div>
+        <div class="desc">${p.description}</div>
+        <div class="info">Beden: ${p.size} | Renk: ${p.color}</div>
+        <div class="info">${p.ean || '-'}  ${p.orderProductId || '-'}</div>
+        <div class="timer-container timer-data" data-startdate="${p.date}">
+            <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+            <div class="timer-text"><span class="time-left-text">...</span></div>
+        </div>
+    </div>
+    <div class="button-group">
+        <button onclick="event.stopPropagation(); shareProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})" style="background:#10b981; margin-bottom:4px; width:100%;">📢 YARDIM İSTE!</button>
+        <div class="btn-row">
+            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')">STOK</button>
+            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')">HAREKET</button>
+        </div>
+        <div class="btn-row">
+            <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')">BARKOD</button>
+            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findSectionInfo('${p.orderProductId}')">SECTION</button>
+        </div>
+    </div>
+</div>`;
+    }).join('')}</div>`;
+}
+
+function showEmptyBasket() {
+    document.getElementById("count").innerText = "0 ürün";
+    contentDiv.innerHTML = `
+        <div class="empty-basket">
+            <div class="icon">🛒</div>
+            <h2>Sepetinizde ürün bulunmamaktadır. :(</h2>
+            <p style="color: #6b7280; font-size: 14px;">Ansayfaya dönüp talep durumunu görüntüleyebilir ya da Mesajlar kısmından talep yok diyerek ağlayabilirsiniz.</p>
+            <button onclick="location.href='mesaj.html'" style="margin-top:20px; padding:10px 20px; background:#2563eb; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">
+                Mesajlar
+            </button>
+        </div>`;
+}
+
+// Sayfa yüklendiğinde başlat
+startApp();
+
+// --- DİĞER FONKSİYONLAR (Modal, Barcode, etc. aynen kalıyor) ---
+
 setInterval(() => {
     document.querySelectorAll('.timer-data').forEach(el => {
         const deadline = new Date(el.dataset.startdate).getTime() + (12 * 60 * 60 * 1000);
@@ -133,213 +225,59 @@ setInterval(() => {
     });
 }, 1000);
 
-// MODAL YÖNETİMİ (Barkod hatasını çözen kısım)
 function openModal(title, contentHTML, isBarcode = false, ean = "") {
     document.getElementById("modalTitle").innerText = title;
     const body = document.getElementById("modalBody");
     body.innerHTML = isBarcode ? '<svg id="barcodeCanvas"></svg>' : contentHTML;
     document.getElementById("mainModal").style.display = "flex";
-
-    // Barkodun çizilmesi için modalın ekranda görünür olmasını beklemeliyiz
     if(isBarcode && ean) {
         setTimeout(() => {
-            try {
-                JsBarcode("#barcodeCanvas", ean, { format: "CODE128", width: 2, height: 80, displayValue: true });
-            } catch (e) {
-                body.innerHTML = "Barkod hatası: " + ean;
-            }
-        }, 100); // 100ms gecikme SVG'nin DOM'a işlenmesi için yeterli
+            try { JsBarcode("#barcodeCanvas", ean, { format: "CODE128", width: 2, height: 80, displayValue: true }); }
+            catch (e) { body.innerHTML = "Barkod hatası: " + ean; }
+        }, 100);
     }
 }
 
 const closeModal = () => document.getElementById("mainModal").style.display = "none";
 
-// --- YENİ EKLENEN SECTION ARAMA FONKSİYONU ---
 async function findSectionInfo(orderProductId) {
     const modalBody = document.getElementById("modalBody");
-    modalBody.innerHTML = "Veritabanında aranıyor...";
-
-    // ID'yi temizleyelim (varsa sağındaki solundaki boşlukları atalım)
     const targetId = orderProductId.trim();
-
     try {
         const response = await fetch('section.txt');
-        if (!response.ok) throw new Error("Dosya bulunamadı");
-        
         const text = await response.text();
-        // Satırları ayır ve her satırı temizle
         const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
-
-        // Eşleşen satırları bul (Sadece ilk sütun tam eşleşirse)
-        const matches = lines.filter(line => {
-            const columns = line.split('\t'); // Tab ile ayrıldığını varsayıyoruz
-            return columns[0].trim() === targetId; 
-        });
-
+        const matches = lines.filter(line => line.split('\t')[0].trim() === targetId);
         if (matches.length > 0) {
-            let tableHTML = `
-                <table style="width:100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;">
-                    <thead style="background: #f3f4f6;">
-                        <tr>
-                            <th style="border: 1px solid #ddd; padding: 8px;">DEPO</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">SECTION</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">ADET</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            
+            let tableHTML = `<table style="width:100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;"><thead style="background: #f3f4f6;"><tr><th style="border: 1px solid #ddd; padding: 8px;">DEPO</th><th style="border: 1px solid #ddd; padding: 8px;">SECTION</th><th style="border: 1px solid #ddd; padding: 8px;">ADET</th></tr></thead><tbody>`;
             matches.forEach(match => {
-                const columns = match.split('\t'); 
-                tableHTML += `
-                    <tr>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${columns[3] || '-'}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; font-weight:bold; color:#2563eb;">${columns[4] || '-'}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${columns[5] || '-'}</td>
-                    </tr>`;
+                const cols = match.split('\t');
+                tableHTML += `<tr><td style="border: 1px solid #ddd; padding: 8px;">${cols[3]||'-'}</td><td style="border: 1px solid #ddd; padding: 8px; font-weight:bold; color:#2563eb;">${cols[4]||'-'}</td><td style="border: 1px solid #ddd; padding: 8px;">${cols[5]||'-'}</td></tr>`;
             });
-
-            tableHTML += `</tbody></table>`;
-            modalBody.innerHTML = tableHTML;
-        } else {
-            modalBody.innerHTML = `<div style='color:red; padding:20px;'>Section bilgisi mevcut değil!<br><small>(Aranan: ${targetId})</small></div>`;
-        }
-    } catch (error) {
-        modalBody.innerHTML = "Dosya okuma hatası: section.txt bulunamadı veya erişilemedi.";
-    }
+            modalBody.innerHTML = tableHTML + `</tbody></table>`;
+        } else { modalBody.innerHTML = `<div style='color:red; padding:20px;'>Section yok!</div>`; }
+    } catch (e) { modalBody.innerHTML = "Dosya hatası."; }
 }
+
 async function findMovementInfo(orderProductId) {
     const modalBody = document.getElementById("modalBody");
-    modalBody.innerHTML = "Hareketler yükleniyor...";
-
     const targetId = orderProductId.trim();
-
     try {
         const response = await fetch('hareket.txt');
-        if (!response.ok) throw new Error("Dosya bulunamadı");
-        
         const text = await response.text();
         const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
-
-        const matches = lines.filter(line => {
-            const columns = line.split('\t');
-            return columns[0] && columns[0].trim() === targetId; 
-        });
-
+        const matches = lines.filter(line => line.split('\t')[0] && line.split('\t')[0].trim() === targetId);
         if (matches.length > 0) {
-            let totalSum = 0; // Toplamı tutacak değişken
-            
-            let tableHTML = `
-                <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 10px;">
-                    <thead style="background: #f3f4f6;">
-                        <tr>
-                            <th style="border: 1px solid #ddd; padding: 6px;">DEPO</th>
-                            <th style="border: 1px solid #ddd; padding: 6px;">KOD</th>
-                            <th style="border: 1px solid #ddd; padding: 6px;">ADET</th>
-                            <th style="border: 1px solid #ddd; padding: 6px;">TARİH</th>
-                            <th style="border: 1px solid #ddd; padding: 6px;">AÇIKLAMA</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            
+            let sum = 0;
+            let tableHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 10px;"><thead style="background: #f3f4f6;"><tr><th style="border: 1px solid #ddd; padding: 6px;">DEPO</th><th style="border: 1px solid #ddd; padding: 6px;">KOD</th><th style="border: 1px solid #ddd; padding: 6px;">ADET</th><th style="border: 1px solid #ddd; padding: 6px;">TARİH</th><th style="border: 1px solid #ddd; padding: 6px;">AÇIKLAMA</th></tr></thead><tbody>`;
             matches.forEach(match => {
-                const columns = match.split('\t');
-                // S3 sütunundaki (indis 2) değerleri topluyoruz. 
-                // Sayı değilse (boşsa veya metinse) 0 sayıyoruz.
-                const val = parseFloat(columns[3]) || 0;
-                totalSum += val;
-
-                tableHTML += `
-                    <tr>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${columns[1] || '-'}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${columns[2] || '-'}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px; font-weight:bold;">${columns[3] || '-'}</td>						
-                        <td style="border: 1px solid #ddd; padding: 6px;">${columns[4] || '-'}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${columns[5] || '-'}</td>
-                    </tr>`;
+                const cols = match.split('\t');
+                sum += parseFloat(cols[3]) || 0;
+                tableHTML += `<tr><td style="border: 1px solid #ddd; padding: 6px;">${cols[1]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px;">${cols[2]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px; font-weight:bold;">${cols[3]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px;">${cols[4]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px;">${cols[5]||'-'}</td></tr>`;
             });
-
-            // Toplam Satırı
-            tableHTML += `
-                    <tr style="background: #f9fafb; font-weight: bold;">
-                        <td style="border: 1px solid #ddd; padding: 6px; text-align:right;">TOPLAM:</td>
-                        <td colspan="1" style="border: 1px solid #ddd; padding: 6px; background: #eee;"></td>
-                        <td style="border: 1px solid #ddd; padding: 6px; color: #2563eb;">${totalSum}</td>
-                        <td colspan="3" style="border: 1px solid #ddd; padding: 6px; background: #eee;"></td>
-                    </tr>`;
-
-            tableHTML += `</tbody></table></div>`;
-            modalBody.innerHTML = tableHTML;
-        } else {
-            modalBody.innerHTML = `<div style='color:red; padding:20px;'>Hareket kaydı bulunamadı!</div>`;
-        }
-    } catch (error) {
-        modalBody.innerHTML = "Dosya hatası: hareket.txt okunamadı.";
-    }
-}
-
-async function loadData() {
-    const user = localStorage.getItem("user");
-    if (!user) return location.href = "anasayfa.html";
-    
-    try {
-        const res = await fetch("https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app/basketData.json");
-        const data = await res.json();
-        
-        // Kullanıcıya ait veri var mı yok mu kontrolü
-        const items = (data && data[user]) ? data[user] : [];
-        
-        document.getElementById("count").innerText = items.length + " ürün";
-
-        // Eğer ürün sayısı 0 ise mesajı göster
-        if (items.length === 0) {
-            contentDiv.innerHTML = `
-                <div class="empty-basket">
-                    <div class="icon">🛒</div>
-                    <h2>Sepetinizde ürün bulunmamaktadır. :(</h2>
-                    <p style="color: #6b7280; font-size: 14px;">Ansayfaya dönüp talep durumunu görüntüleyebilir ya da Mesajlar kısmından talep yok diyerek ağlayabilirsiniz.</p>
-                    <button onclick="location.href='mesaj.html'" style="margin-top:20px; padding:10px 20px; background:#2563eb; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">
-                        Mesajlar
-                    </button>
-                </div>`;
-            return;
-        }
-
-        // Ürün varsa kartları oluştur
-        contentDiv.innerHTML = `<div class="container">${items.map(p => {
-            const safeDesc = p.description.replace(/'/g, "\\'");
-            return `
-<div class="card" onclick="handleDoubleClick('${p.orderProductId}')">
-    <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/784/1080/")}" alt="">
-    <div class="card-content">
-        <div class="brand">${p.brand}</div>
-        <div class="desc">${p.description}</div>
-        <div class="info">Beden: ${p.size} | Renk: ${p.color}</div>
-        <div class="info">${p.ean || '-'}  ${p.orderProductId || '-'}</div>
-        <div class="timer-container timer-data" data-startdate="${p.date}">
-            <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
-            <div class="timer-text"><span class="time-left-text">...</span></div>
-        </div>
-    </div>
-    <div class="button-group">
-        <button onclick="event.stopPropagation(); shareProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})" 
-                style="background:#10b981; margin-bottom:4px; width:100%;">
-            📢 YARDIM İSTE!
-        </button>
-        <div class="btn-row">
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')">STOK</button>
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')">HAREKET</button>
-        </div>
-        <div class="btn-row">
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')">BARKOD</button>
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findSectionInfo('${p.orderProductId}')">SECTION</button>
-        </div>
-    </div>
-</div>`;
-        }).join('')}</div>`;
-    } catch (e) { 
-        contentDiv.innerHTML = "<div class='error' style='text-align:center; margin-top:50px;'>Veritabanı bağlantı hatası oluştu.</div>"; 
-    }
+            modalBody.innerHTML = tableHTML + `<tr style="font-weight:bold;"><td colspan="2" style="text-align:right;">TOPLAM:</td><td>${sum}</td><td colspan="2"></td></tr></tbody></table></div>`;
+        } else { modalBody.innerHTML = `<div style='color:red; padding:20px;'>Hareket yok!</div>`; }
+    } catch (e) { modalBody.innerHTML = "Dosya hatası."; }
 }
 
 let lastClick = 0;
@@ -349,29 +287,18 @@ function handleDoubleClick(id) {
     lastClick = now;
 }
 
-loadData();
-document.addEventListener("contextmenu", e => e.preventDefault());
 async function shareProduct(product) {
     const user = localStorage.getItem("user");
-
-    const shareData = {
-        user: user,
-        text: "Bir ürün paylaştı!",
-        product: product, // Ürün verilerini aynen gönderiyoruz
-        type: "product_share",
-        timestamp: Date.now()
-    };
-
     try {
-        await fetch("https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app/messages.json", {
+        await fetch(`${baseDbUrl}/messages.json`, {
             method: "POST",
-            body: JSON.stringify(shareData)
+            body: JSON.stringify({ user, text: "Bir ürün paylaştı!", product, type: "product_share", timestamp: Date.now() })
         });
         alert("Ürün başarıyla paylaşıldı!");
-    } catch (e) {
-        alert("Paylaşım başarısız.");
-    }
+    } catch (e) { alert("Paylaşım başarısız."); }
 }
+
+document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 
 </body>

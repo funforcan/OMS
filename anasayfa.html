@@ -67,16 +67,24 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 /* Ana Sistem Yönetimi Paneli */
 .admin-main-card {
-    width: 96%; /* Kenarlarda çok ufak bir boşluk bırakır */
-    max-width: 1200px; /* Çok geniş ekranlarda aşırı yayılmaması için opsiyonel üst sınır */
+    width: 100%; /* %96'dan %98'e çıkarıldı, kenar boşlukları azaltıldı */
+    max-width: 1500px; /* Maksimum genişlik artırıldı (veya tamamen kaldırabilirsin) */
     background: #111827; 
     color: white;
     border-radius: 12px;
-    margin: 20px auto; /* Ortalar */
+    margin: 10px auto; /* Üst-alt boşluk biraz azaltıldı */
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
-
+#admin-main-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 10px; /* Kenarlara yapışmaması için çok hafif iç boşluk */
+    box-sizing: border-box;
+}
+.server-table th, .server-table td {
+    padding: 12px 15px; /* Hücre iç boşlukları artırılarak daha dolgun görünmesi sağlandı */
+}
 .admin-main-header {
     padding: 15px 20px;
     cursor: pointer;
@@ -211,10 +219,62 @@ input:checked + .slider:before { transform: translateX(20px); }
     background: #dc2626;
     transform: scale(0.99); /* Tıklama hissi için hafif küçülme efekti */
 }
+/* Loader Karartma Arka Planı */
+#loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f4f6f9; /* Sayfa arka plan rengiyle aynı ve tam opak */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* En üstte durması için */
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+.loader {
+    width: 50px;
+    aspect-ratio: 1;
+    --_c: no-repeat radial-gradient(farthest-side, #2563eb 92%, #0000);
+    background: 
+        var(--_c) top,
+        var(--_c) left,
+        var(--_c) right,
+        var(--_c) bottom;
+    background-size: 12px 12px;
+    animation: l7 1s infinite;
+}
+
+@keyframes l7 { to { transform: rotate(.5turn) } }
+
+/* Loader gizlendiğinde kullanılacak sınıf */
+.loader-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+/* Sayfa ilk açıldığında içeriği tamamen gizliyoruz */
+#content, #logout-area, #main-nav {
+    visibility: hidden;
+    opacity: 0;
+}
+
+/* Loader bittiğinde bu sınıfı ekleyerek içeriği göstereceğiz */
+.page-ready #content, 
+.page-ready #logout-area, 
+.page-ready #main-nav {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.5s ease-in;
+}
 </style>
 </head>
 <body>
-
+<div id="loader-overlay">
+    <div class="loader"></div>
+</div>
 <header id="main-nav">
     <span class="active">Ansayfa</span>
     <span id="nav-cart" onclick="navTo('index.html')">Sepet</span>
@@ -235,45 +295,43 @@ input:checked + .slider:before { transform: translateX(20px); }
     </div>
 <div id="content">
     <div id="welcome-msg" class="hidden" style="text-align: center;">
-        <h3>Hoş geldiniz, <span id="user-display" style="color:#2563eb"></span>!</h3>
+        <h3>Hoş geldin, <span id="user-display" style="color:#2563eb"></span>!</h3>
     </div>
 
-    <div id="admin-main-container" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-        <div class="admin-main-card">
-            <div class="admin-main-header" onclick="toggleMainAdminPanel()">
-                <span>🖥️ Bot Yönetimi</span>
-                <span id="main-chevron">▼</span>
-            </div>
-            <div id="admin-main-content" class="admin-main-content">
-                <div id="admin-users-list"></div>
-            </div>
+<div id="admin-main-container" class="hidden">
+    
+    <div class="admin-main-card">
+        <div class="admin-main-header" onclick="toggleMainAdminPanel()">
+            <span>🖥️ Bot Yönetimi</span>
+            <span id="main-chevron">▼</span>
         </div>
-
-        <div class="admin-main-card">
-            <div class="admin-main-header" onclick="toggleServerPanel()">
-                <span>🖥️ Sunucu Yönetimi</span>
-                <span id="server-main-chevron">▼</span>
-            </div>
-<div id="server-main-content" class="admin-main-content">
-    <div class="admin-action-row">
-        <button class="btn-reset-all" onclick="resetAllServers()">Sunucuları Yenile !</button>
+        <div id="admin-main-content" class="admin-main-content">
+            <div id="admin-users-list"></div>
+        </div>
     </div>
-    <div id="admin-server-list"></div>
+
+    <div class="admin-main-card">
+        <div class="admin-main-header" onclick="toggleServerPanel()">
+            <span>🖥️ Sunucu Yönetimi</span>
+            <span id="server-main-chevron">▼</span>
+        </div>
+        <div id="server-main-content" class="admin-main-content">
+            <div class="admin-action-row">
+                <button class="btn-reset-all" onclick="resetAllServers()">Sunucuları Yenile !</button>
+            </div>
+            <div id="admin-server-list"></div>
+        </div>
+    </div>
+    
 </div>
-        </div>
-    </div>
 </div>
 </div>
 
 <div id="logout-area" style="flex-direction: column; align-items: center; gap: 10px;">
     <div id="action-area" class="hidden" style="text-align: center; padding: 15px; width: 100%; max-width: 320px;">
-        <div id="timer-display" style="font-weight: bold; color: #ef4444; margin-bottom: 8px; font-size: 18px; min-height: 24px;"></div>
-        <button id="reset-btn" class="btn-main" style="background: #2563eb;" onclick="handleResetAction()">
-            Sepeti yenile!
-        </button>
     </div>
     
-    <button class="logout-btn" onclick="logout()">Güvenli Çıkış Yap</button>
+    <button class="logout-btn" onclick="logout()">Çıkış Yap!</button>
 </div>
 
 <script>
@@ -281,9 +339,25 @@ const firebaseUrl = "https://funforcanserver-default-rtdb.europe-west1.firebased
 let currentMode = '';
 const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
 let countdownInterval;
-window.onload = () => {
+window.onload = async () => {
+    // 1. Önce oturum ve zamanlayıcı kontrollerini yap
     checkSession();
-    checkTimer(); // Sayfa açıldığında timer kontrolü
+    checkTimer();
+    
+    // 2. Loader'ı kapat ve içeriği göster
+    const loader = document.getElementById("loader-overlay");
+    
+    setTimeout(() => {
+        // Body'ye hazır sınıfını ekle (İçerik CSS ile görünür olacak)
+        document.body.classList.add("page-ready");
+        
+        // Loader'ı yumuşakça gizle
+        loader.style.opacity = "0";
+        
+        setTimeout(() => {
+            loader.style.display = "none";
+        }, 400);
+    }, 800); // 800ms bekleme süresi (Göz yormayan bir geçiş için)
 };
 // Paneli Aç/Kapat
 function toggleServerPanel() {
@@ -490,23 +564,41 @@ function loginSuccess(username) {
 }
 
 // Giriş başarısını kontrol eden fonksiyonu güncelle
-function showLoggedInState(username) {
+// Giriş durumunu gösteren güncellenmiş fonksiyon
+async function showLoggedInState(username) {
+    const userDisplay = document.getElementById("user-display");
+    
+    try {
+        const res = await fetch(`${firebaseUrl}/${username}.json`);
+        const userData = await res.json();
+        
+        if (userData && userData.userTitle) {
+            // İlk 7 karakteri kes (slice(7) ile 7. indeksten başlar)
+            const cleanTitle = userData.userTitle.slice(7); 
+            userDisplay.innerText = cleanTitle;
+        } else {
+            userDisplay.innerText = username;
+        }
+    } catch (err) {
+        console.error("Kullanıcı bilgisi çekilemedi:", err);
+        userDisplay.innerText = username;
+    }
+
+    // Diğer kodlar (admin kontrolü, logout-area görünürlüğü vs.) aynen kalıyor...
     document.getElementById("action-area").classList.remove("hidden");
     document.getElementById("auth-box").classList.add("hidden");
     document.getElementById("welcome-msg").classList.remove("hidden");
-    document.getElementById("user-display").innerText = username;
     document.getElementById("logout-area").style.display = "flex";
 
     const navSpans = document.querySelectorAll("#main-nav span:not(#count)");
     navSpans.forEach(span => span.classList.add("enabled"));
 
-    // Admin Kontrolü
     if (username === "197127") {
         const adminContainer = document.getElementById("admin-main-container");
         if(adminContainer) {
             adminContainer.classList.remove("hidden");
             renderAdminPanel();
-			renderServerManagement();
+            renderServerManagement();
         }
     }
 }
@@ -531,7 +623,6 @@ async function renderAdminPanel() {
             const card = document.createElement("div");
             card.className = "user-admin-card";
             
-            // Yeni Başlık Yapısı (İkon En Solda)
             const header = document.createElement("div");
             header.className = "user-card-header";
             header.innerHTML = `
@@ -556,7 +647,6 @@ async function renderAdminPanel() {
                 </table>
             `;
 
-            // Tıklama Olayı (İkon Dönme Efekti Dahil)
             header.onclick = () => {
                 const isOpen = content.classList.toggle("open");
                 header.querySelector(".chevron").style.transform = isOpen ? "rotate(90deg)" : "rotate(0deg)";
@@ -573,11 +663,19 @@ async function renderAdminPanel() {
                 const tekKey = `${userId}_tek`;
                 const cokKey = `${userId}_cok`;
                 const serverName = deviceId.replace("Device", "Server ");
+                
+                // --- YENİ EKLEDİĞİMİZ KISIM ---
+                // Status true ise yeşil tik, false ise kırmızı çarpı
+                const isOnline = serverData[deviceId].Server === true;
+                const statusIcon = isOnline 
+                    ? '<span style="color: #10b981; margin-right: 5px;">✔</span>' 
+                    : '<span style="color: #ef4444; margin-right: 5px;">✖</span>';
+                // ------------------------------
 
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td style="text-align:left; padding-left:15px; color:#374151; font-weight:500;">
-                        ${serverName}
+                        ${statusIcon} ${serverName}
                     </td>
                     <td>
                         <label class="switch">

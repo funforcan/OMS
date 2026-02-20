@@ -96,7 +96,15 @@ input {
 </style>
 </head>
 <body>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
+<div id="mainModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px;">
+    <div style="background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center;">
+        <h2 id="modalTitle" style="font-size: 16px;"></h2>
+        <div id="modalBody"></div>
+        <button onclick="closeModal()" style="margin-top: 15px; padding: 10px 20px; background: #111827; color: white; border: none; border-radius: 6px; width: 100%;">Kapat</button>
+    </div>
+</div>
 <header>
     <div onclick="location.href='anasayfa.html'">Anasayfa</div>
     <div onclick="location.href='index.html'">Sepet</div>
@@ -170,33 +178,49 @@ async function loadMessages() {
             const uInfo = (users && users[m.user]) ? users[m.user] : {};
             const isMe = m.user === currentUser;
 
-            let productHTML = "";
-            if (m.type === "product_share" && m.product) {
-                productHTML = `
-                    <div style="margin-top:10px; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; background:#fff; width: 100%;">
-                        <img src="${m.product.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/500/700/")}" style="width:100%; height:180px; object-fit: cover;">
-                        <div style="padding:10px;">
-                            <div style="font-weight:bold; font-size:13px; color:#111827;">${m.product.brand}</div>
-                            <div style="font-size:11px; color:#374151; margin-bottom:5px;">${m.product.description}</div>
-                            
-                            <div class="msg-timer-data" data-startdate="${m.product.date}" style="margin: 8px 0;">
-                                <div style="width:100%; height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden;">
-                                    <div class="progress-bar-fill"></div>
-                                </div>
-                                <div class="time-left-text" style="font-size:10px; font-weight:bold; color:#4b5563; margin-top:3px;">...</div>
-                            </div>
+// loadMessages içinde productHTML değişkeninin olduğu yeri bununla değiştir:
 
-                            <div style="font-size:10px; color:#6b7280; border-top:1px solid #f3f4f6; padding-top:5px; line-height:1.4;">
-                                <b>Beden:</b> ${m.product.size} | <b>Renk:</b> ${m.product.color || '-'}<br>
-                                <b>EAN:</b> ${m.product.ean || '-'}<br>
-                                <b>ID:</b> ${m.product.orderProductId || '-'}
-                            </div>
-                        </div>
-                    </div>`;
-            }
+let productHTML = "";
+if (m.type === "product_share" && m.product) {
+    const p = m.product;
+    const safeDesc = p.description.replace(/'/g, "\\'");
+    
+    productHTML = `
+    <div class="card" onclick="handleDoubleClick('${p.orderProductId}')" style="margin-top:10px; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; background:#fff; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/500/700/")}" style="width:100%; height:100%; object-fit: cover;">
+        <div style="padding:10px;">
+            <div style="font-weight:bold; font-size:13px; color:#111827;">${p.brand}</div>
+            <div style="font-size:11px; color:#374151; margin-bottom:5px; min-height: 32px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${p.description}</div>
+            
+            <div style="font-size:10px; color:#6b7280; background: #f9fafb; padding: 5px; border-radius: 4px; margin-bottom: 8px; line-height: 1.4;">
+                <b>Beden:</b> ${p.size} | <b>Renk:</b> ${p.color || '-'}<br>
+                <b>EAN:</b> ${p.ean || '-'}<br>
+                <b>ID:</b> ${p.orderProductId || '-'}
+            </div>
+
+            <div class="msg-timer-data" data-startdate="${p.date}" style="margin: 8px 0;">
+                <div style="width:100%; height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden;">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <div class="time-left-text" style="font-size:10px; font-weight:bold; color:#4b5563; margin-top:3px;">...</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px;">
+                <div style="display: flex; gap: 4px;">
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">STOK</button>
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">HAREKET</button>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">BARKOD</button>
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findSectionInfo('${p.orderProductId}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">SECTION</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
 
             chatHTML += `
-                <div class="message-card ${isMe ? 'my-message' : ''}" style="width: ${m.type === 'product_share' ? '90%' : 'auto'};">
+                <div class="message-card ${isMe ? 'my-message' : ''}" style="width: ${m.type === 'product_share' ? '60%' : 'auto'}; max-width: ${m.type === 'product_share' ? '280px' : '85%'};">
                     <div class="msg-header">
                         <span style="color: ${uInfo.userColor || '#2563eb'}">${m.user}</span>
                         <span class="user-title">[${uInfo.userTitle || 'Üye'}]</span>
@@ -212,7 +236,66 @@ async function loadMessages() {
 
     } catch (e) { console.log(e); }
 }
+// Mesajlar sayfasına eklenmesi gereken yardımcılar:
 
+function openModal(title, contentHTML, isBarcode = false, ean = "") {
+    document.getElementById("modalTitle").innerText = title;
+    const body = document.getElementById("modalBody");
+    body.innerHTML = isBarcode ? '<svg id="barcodeCanvas"></svg>' : contentHTML;
+    document.getElementById("mainModal").style.display = "flex";
+    if(isBarcode && ean) {
+        setTimeout(() => {
+            try { JsBarcode("#barcodeCanvas", ean, { format: "CODE128", width: 2, height: 80, displayValue: true }); }
+            catch (e) { body.innerHTML = "Barkod hatası: " + ean; }
+        }, 100);
+    }
+}
+
+const closeModal = () => document.getElementById("mainModal").style.display = "none";
+
+async function findSectionInfo(orderProductId) {
+    const modalBody = document.getElementById("modalBody");
+    try {
+        const response = await fetch('section.txt');
+        const text = await response.text();
+        const matches = text.split(/\r?\n/).filter(line => line.split('\t')[0].trim() === orderProductId.trim());
+        if (matches.length > 0) {
+            let tableHTML = `<table style="width:100%; border-collapse: collapse; font-size: 11px;"><thead style="background: #f3f4f6;"><tr><th>DEPO</th><th>SEC</th><th>ADET</th></tr></thead><tbody>`;
+            matches.forEach(match => {
+                const cols = match.split('\t');
+                tableHTML += `<tr><td>${cols[3]}</td><td style="color:#2563eb; font-weight:bold;">${cols[4]}</td><td>${cols[5]}</td></tr>`;
+            });
+            modalBody.innerHTML = tableHTML + `</tbody></table>`;
+        } else { modalBody.innerHTML = "Section bulunamadı."; }
+    } catch (e) { modalBody.innerHTML = "Dosya okuma hatası."; }
+}
+
+async function findMovementInfo(orderProductId) {
+    const modalBody = document.getElementById("modalBody");
+    const targetId = orderProductId.trim();
+    try {
+        const response = await fetch('hareket.txt');
+        const text = await response.text();
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        const matches = lines.filter(line => line.split('\t')[0] && line.split('\t')[0].trim() === targetId);
+        if (matches.length > 0) {
+            let sum = 0;
+            let tableHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 10px;"><thead style="background: #f3f4f6;"><tr><th style="border: 1px solid #ddd; padding: 6px;">DEPO</th><th style="border: 1px solid #ddd; padding: 6px;">KOD</th><th style="border: 1px solid #ddd; padding: 6px;">ADET</th><th style="border: 1px solid #ddd; padding: 6px;">TARİH</th><th style="border: 1px solid #ddd; padding: 6px;">AÇIKLAMA</th></tr></thead><tbody>`;
+            matches.forEach(match => {
+                const cols = match.split('\t');
+                sum += parseFloat(cols[3]) || 0;
+                tableHTML += `<tr><td style="border: 1px solid #ddd; padding: 6px;">${cols[1]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px;">${cols[2]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px; font-weight:bold;">${cols[3]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px;">${cols[4]||'-'}</td><td style="border: 1px solid #ddd; padding: 6px;">${cols[5]||'-'}</td></tr>`;
+            });
+            modalBody.innerHTML = tableHTML + `<tr style="font-weight:bold;"><td colspan="2" style="text-align:right;">TOPLAM:</td><td>${sum}</td><td colspan="2"></td></tr></tbody></table></div>`;
+        } else { modalBody.innerHTML = `<div style='color:red; padding:20px;'>Hareket yok!</div>`; }
+    } catch (e) { modalBody.innerHTML = "Dosya hatası."; }
+}
+let lastClick = 0;
+function handleDoubleClick(id) {
+    const now = Date.now();
+    if (now - lastClick < 400) window.open("https://www.boyner.com.tr/search?q=" + id.slice(0, -3), "_blank");
+    lastClick = now;
+}
 async function sendMessage() {
     const input = document.getElementById("msgInput");
     const text = input.value.trim();
