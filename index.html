@@ -73,30 +73,42 @@
 
 <script>
 async function clearBasket() {
-    const user = localStorage.getItem("user");
-    if (!user) return;
+    const userId = localStorage.getItem("user");
+    if (!userId) {
+        alert("Kullanıcı bulunamadı!");
+        return;
+    }
 
-    // Kullanıcıya onay soralım (Yanlışlıkla tıklamalara karşı)
-    const onay = confirm("Sepetinizdeki tüm ürünler silinecektir. Emin misiniz?");
+    const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
     
-    if (onay) {
-        try {
-            // Firebase'deki o kullanıcıya ait sepeti siliyoruz (DELETE metoduyla)
-            const res = await fetch(`https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app/basketData/${user}.json`, {
-                method: "DELETE"
-            });
+    // Kullanıcıya onay soralım
+    if (!confirm("Sepeti yenilemek istediğinize emin misiniz?")) return;
 
-            if (res.ok) {
-                alert("Sepet başarıyla temizlendi.");
-                // Sayfayı yenileyerek boş sepet mesajının gelmesini sağlıyoruz
-                loadData(); 
-            } else {
-                alert("Sepet temizlenirken bir sorun oluştu.");
-            }
-        } catch (e) {
-            console.error(e);
-            alert("Bağlantı hatası.");
-        }
+    // Görsel geri bildirim için sayacı "..." yapalım
+    const countEl = document.getElementById("count");
+    const originalText = countEl.innerText;
+    countEl.innerText = "...";
+
+    try {
+        // 1. basketData içindeki kullanıcıya ait veriyi sil (DELETE)
+        await fetch(`${baseDbUrl}/basketData/${userId}.json`, { method: 'DELETE' });
+
+        // 2. UserList içindeki refresh değerini true yap (PATCH)
+        // Bu işlem ana sistemin yeni verileri yüklemesini tetikler.
+        await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ refresh: true })
+        });
+
+        alert("Yenileme talebi gönderildi. Sepetiniz birazdan güncellenecektir.");
+        
+        // Sayfayı reload et veya veriyi tekrar yükle
+        loadData();
+
+    } catch (err) {
+        console.error("İşlem hatası:", err);
+        alert("Bir hata oluştu.");
+        countEl.innerText = originalText;
     }
 }
 const contentDiv = document.getElementById("content");
