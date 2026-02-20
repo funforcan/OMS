@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FunForCan - E-Ticaret 3.0</title>
+<style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f9; user-select: none; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; overflow-x: hidden;}
+    
+    header { position: fixed; top: 0; left: 0; width: 100%; background: #111827; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-weight: bold; }
+    
+    /* Menü butonları varsayılan olarak pasif (tıklanamaz) */
+    header span { 
+        opacity: 0.4; 
+        cursor: not-allowed; 
+        transition: 0.3s;
+    }
+    
+    /* Giriş yapılınca eklenecek aktif sınıfı */
+    header span.enabled { 
+        opacity: 1; 
+        cursor: pointer; 
+    }
+#action-area {
+    transition: all 0.3s ease;
+}
+    header .active, #count { background: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 13px; opacity: 1; }
+    
+#content { 
+    padding: 80px 20px 20px; 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+    /* Giriş Paneli */
+    .auth-container { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,0.15); width: 320px; text-align: center; }
+    .auth-container h2 { margin-bottom: 20px; color: #111827; font-size: 20px; }
+    
+    .expandable-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; }
+    .expandable-panel.open { max-height: 300px; margin-top: 15px; }
+
+    input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+    
+    .btn-main { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; }
+    .login-toggle { background: #2563eb; }
+    .register-toggle { background: #10b981; }
+    .action-btn { background: #111827; margin-top: 10px; }
+
+    #error { color: #dc2626; font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+    /* Çıkış Yap Butonu */
+    #logout-area { width: 100%; padding: 20px; display: none; justify-content: center; }
+    .logout-btn { background: #ef4444; color: white; border: none; padding: 12px 40px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+    .hidden { display: none !important; }
+/* Switch (Toggle) Buton Tasarımı */
+.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+.slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #10b981; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Ana Sistem Yönetimi Paneli */
+.admin-main-card {
+    width: 96%; /* Kenarlarda çok ufak bir boşluk bırakır */
+    max-width: 1200px; /* Çok geniş ekranlarda aşırı yayılmaması için opsiyonel üst sınır */
+    background: #111827; 
+    color: white;
+    border-radius: 12px;
+    margin: 20px auto; /* Ortalar */
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.admin-main-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+#admin-users-list, #admin-server-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.admin-main-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
+    background: #f4f6f9; /* İçerik açıldığında yine açık renk olsun */
+    padding: 0 10px;
+}
+
+.admin-main-content.open {
+    max-height: 2000px; /* İçerik çoksa geniş tutuyoruz */
+    padding: 15px 10px;
+}
+
+/* Ana Kart Yapısı */
+/* User kartlarının da tam genişlikte olması için */
+.user-admin-card { 
+    background: white; 
+    border-radius: 8px; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    margin-bottom: 8px; 
+    width: 100%; /* İçerideki kartlar da tam genişlik */
+    max-width: 100%; 
+    border: 1px solid #e5e7eb;
+}
+
+/* Başlık Alanı (Hizalanmış) */
+.user-card-header { 
+    padding: 12px 16px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center;
+    background: #f9fafb;
+    transition: background 0.2s;
+}
+.user-card-header:hover { background: #f3f4f6; }
+
+/* Ok İkonu En Sola */
+.chevron { 
+    margin-right: 12px; 
+    font-size: 12px; 
+    transition: transform 0.3s;
+    color: #6b7280;
+}
+.open-icon { transform: rotate(90deg); }
+
+.user-info { font-weight: 600; color: #111827; flex: 1; }
+.user-id-tag { font-size: 11px; color: #9ca3af; font-weight: normal; margin-left: 8px; }
+
+/* Tablo ve İçerik */
+.user-card-content { 
+    max-height: 0; 
+    overflow: hidden; 
+    transition: max-height 0.3s ease-out; 
+}
+.user-card-content.open { 
+    max-height: 1000px; 
+    border-top: 1px solid #e5e7eb; 
+}
+
+.server-table { width: 100%; border-collapse: collapse; }
+.server-table th { 
+    background: #f3f4f6; 
+    padding: 10px; 
+    font-size: 12px; 
+    text-transform: uppercase; 
+    color: #4b5563;
+    border-bottom: 1px solid #e5e7eb;
+}
+.server-table td { 
+    padding: 12px 10px; 
+    text-align: center; 
+    border-bottom: 1px solid #f3f4f6; 
+    font-size: 14px;
+}
+/* Sunucu Kartı Özel Stilleri */
+.status-active { background: #dcfce7 !important; border-left: 5px solid #10b981; }
+.status-passive { background: #fee2e2 !important; border-left: 5px solid #ef4444; }
+
+.server-card-header {
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+.admin-action-row {
+    width: 100%;
+    padding: 10px 0; /* Kenarlara tam yaslanması için sağ-sol padding'i sıfırladık */
+    display: flex;
+    justify-content: center; /* Butonu ortalar */
+}
+
+.btn-reset-all {
+    background: #000000;
+    color: white;
+    border: none;
+    padding: 15px 10px; /* Daha dolgun görünmesi için padding artırıldı */
+    border-radius: 8px; /* Panel köşeleriyle uyumlu olsun diye biraz artırıldı */
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px; /* Yazı boyutu biraz büyütüldü */
+    transition: all 0.2s;
+    width: 100%; /* İçinde bulunduğu alan boyunca genişler */
+    box-sizing: border-box; /* Padding'in genişliği bozmasını engeller */
+}
+
+.btn-reset-all:hover {
+    background: #dc2626;
+    transform: scale(0.99); /* Tıklama hissi için hafif küçülme efekti */
+}
+</style>
+</head>
+<body>
+
+<header id="main-nav">
+    <span class="active">Ansayfa</span>
+    <span id="nav-cart" onclick="navTo('index.html')">Sepet</span>
+    <span id="nav-msg" onclick="navTo('mesaj.html')">Mesajlar</span>
+</header>
+<div id="content">
+    <div id="auth-box" class="auth-container">
+        <h2>E-Ticaret 3.0</h2>
+        <button id="login-nav-btn" class="btn-main login-toggle" onclick="togglePanel('login')">Giriş Yap</button>
+        <button id="register-nav-btn" class="btn-main register-toggle" onclick="togglePanel('register')">Kayıt Ol</button>
+
+        <div id="form-panel" class="expandable-panel">
+            <input type="text" id="username" placeholder="Sicil Numarası" />
+            <input type="password" id="password" placeholder="Şifre" />
+            <button id="submit-btn" class="btn-main action-btn" onclick="handleAuth()">Gönder</button>
+        </div>
+        <div id="error"></div>
+    </div>
+<div id="content">
+    <div id="welcome-msg" class="hidden" style="text-align: center;">
+        <h3>Hoş geldiniz, <span id="user-display" style="color:#2563eb"></span>!</h3>
+    </div>
+
+    <div id="admin-main-container" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div class="admin-main-card">
+            <div class="admin-main-header" onclick="toggleMainAdminPanel()">
+                <span>🖥️ Bot Yönetimi</span>
+                <span id="main-chevron">▼</span>
+            </div>
+            <div id="admin-main-content" class="admin-main-content">
+                <div id="admin-users-list"></div>
+            </div>
+        </div>
+
+        <div class="admin-main-card">
+            <div class="admin-main-header" onclick="toggleServerPanel()">
+                <span>🖥️ Sunucu Yönetimi</span>
+                <span id="server-main-chevron">▼</span>
+            </div>
+<div id="server-main-content" class="admin-main-content">
+    <div class="admin-action-row">
+        <button class="btn-reset-all" onclick="resetAllServers()">Sunucuları Yenile !</button>
+    </div>
+    <div id="admin-server-list"></div>
+</div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div id="logout-area" style="flex-direction: column; align-items: center; gap: 10px;">
+    <div id="action-area" class="hidden" style="text-align: center; padding: 15px; width: 100%; max-width: 320px;">
+        <div id="timer-display" style="font-weight: bold; color: #ef4444; margin-bottom: 8px; font-size: 18px; min-height: 24px;"></div>
+        <button id="reset-btn" class="btn-main" style="background: #2563eb;" onclick="handleResetAction()">
+            Sepeti yenile!
+        </button>
+    </div>
+    
+    <button class="logout-btn" onclick="logout()">Güvenli Çıkış Yap</button>
+</div>
+
+<script>
+const firebaseUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app/UserList";
+let currentMode = '';
+const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
+let countdownInterval;
+window.onload = () => {
+    checkSession();
+    checkTimer(); // Sayfa açıldığında timer kontrolü
+};
+// Paneli Aç/Kapat
+function toggleServerPanel() {
+    const content = document.getElementById("server-main-content");
+    const chevron = document.getElementById("server-main-chevron");
+    const isOpen = content.classList.toggle("open");
+    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+}
+async function resetAllServers() {
+    if (!confirm("Tüm sunucuların çalışma ve bağlantı durumlarını pasife almak istediğinize emin misiniz?")) return;
+
+    try {
+        // 1. Mevcut sunucu listesini çek
+        const res = await fetch(`${baseDbUrl}/ServerList.json`);
+        const serverData = await res.json();
+        
+        if (!serverData) return;
+
+        const updates = {};
+        // 2. Her cihaz için güncellenecek alanları belirle
+        for (let deviceId in serverData) {
+            updates[`${deviceId}/Active`] = false;
+            updates[`${deviceId}/Server`] = false;
+            updates[`${deviceId}/Status`] = false;
+        }
+
+        // 3. Toplu güncelleme gönder (PATCH)
+        const patchRes = await fetch(`${baseDbUrl}/ServerList.json`, {
+            method: 'PATCH',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updates)
+        });
+
+        if (patchRes.ok) {
+            alert("Tüm sistemler başarıyla durduruldu.");
+            renderServerManagement(); // Listeyi yenile
+        } else {
+            throw new Error("Güncelleme başarısız");
+        }
+    } catch (err) {
+        console.error("Reset hatası:", err);
+        alert("İşlem sırasında bir hata oluştu!");
+    }
+}
+// Sunucu Yönetimini Başlat (Veritabanından Çeker)
+async function renderServerManagement() {
+    try {
+        const res = await fetch(`${baseDbUrl}/ServerList.json`);
+        const serverData = await res.json();
+        const container = document.getElementById("admin-server-list");
+        if (!container) return;
+        container.innerHTML = "";
+
+        for (let deviceId in serverData) {
+            const server = serverData[deviceId];
+            const isOnline = server.Status === true; // Status kontrolü
+            const serverName = deviceId.replace("Device", "Server ");
+
+            const card = document.createElement("div");
+            card.className = `user-admin-card ${isOnline ? 'status-active' : 'status-passive'}`;
+
+            card.innerHTML = `
+                <div class="server-card-header" onclick="toggleSubPanel('${deviceId}')">
+                    <div>
+                        <span class="status-dot" style="background:${isOnline ? '#10b981' : '#ef4444'}"></span>
+                        <b style="color:#111827">${serverName}</b>
+                    </div>
+                    <span id="chev-${deviceId}">▶</span>
+                </div>
+                <div id="content-${deviceId}" class="user-card-content">
+                    <table class="server-table">
+                        <tbody>
+                            <tr>
+                                <td style="text-align:left; padding-left:15px; color: black; font-weight: bold;">SUNUCU DURUMU : </td>
+                                <td>
+                                    <label class="switch">
+                                        <input type="checkbox" ${server.Server ? "checked" : ""} 
+                                               onchange="updateServerConfig('${deviceId}', 'Server', this.checked)">
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    } catch (err) {
+        console.error("Sunucu listesi hatası:", err);
+    }
+}
+
+// Alt panelleri tek tek açma
+function toggleSubPanel(id) {
+    const content = document.getElementById(`content-${id}`);
+    const chev = document.getElementById(`chev-${id}`);
+    const isOpen = content.classList.toggle("open");
+    chev.style.transform = isOpen ? "rotate(90deg)" : "rotate(0deg)";
+}
+
+// Sunucu ayarlarını güncelleme (Active veya Server bool değerleri için)
+async function updateServerConfig(device, field, value) {
+    try {
+        await fetch(`${baseDbUrl}/ServerList/${device}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ [field]: value })
+        });
+    } catch (err) {
+        alert("Güncelleme başarısız!");
+    }
+}
+function toggleMainAdminPanel() {
+    const content = document.getElementById("admin-main-content");
+    const chevron = document.getElementById("main-chevron");
+    const isOpen = content.classList.toggle("open");
+    
+    chevron.innerText = isOpen ? "▲" : "▼";
+    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+}
+function checkSession() {
+    const user = localStorage.getItem("user");
+    if (user) {
+        showLoggedInState(user);
+    }
+}
+
+// Navigasyon fonksiyonu
+function navTo(page) {
+    if (localStorage.getItem("user")) {
+        window.location.href = page;
+    } else {
+        document.getElementById("error").innerText = "Lütfen önce giriş yapın!";
+    }
+}
+
+function togglePanel(mode) {
+    const panel = document.getElementById("form-panel");
+    const submitBtn = document.getElementById("submit-btn");
+    
+    if (currentMode === mode && panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        currentMode = '';
+    } else {
+        currentMode = mode;
+        submitBtn.innerText = mode === 'login' ? 'Giriş Yap' : 'Kaydı Tamamla';
+        panel.classList.add('open');
+        document.getElementById("error").innerText = "";
+    }
+}
+
+async function handleAuth() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const errorDiv = document.getElementById("error");
+
+    if (!username || !password) {
+        errorDiv.innerText = "Tüm alanları doldurun!";
+        return;
+    }
+
+    try {
+if (currentMode === 'login') {
+    const res = await fetch(`${firebaseUrl}/${username}.json`);
+    const userData = await res.json(); // dbPassword yerine userData diyelim
+
+    if (userData === null) {
+        errorDiv.innerText = "Kullanıcı bulunamadı!";
+    } else if (userData.password !== password) { // .password ile kontrol et
+        errorDiv.innerText = "Şifre hatalı!";
+    } else {
+        loginSuccess(username);
+    }
+} else if (currentMode === 'register') {
+    const checkRes = await fetch(`${firebaseUrl}/${username}.json`);
+    const exists = await checkRes.json();
+
+    if (exists !== null) {
+        errorDiv.innerText = "Bu sicil zaten kayıtlı!";
+        return;
+    }
+
+    const regRes = await fetch(`${firebaseUrl}/${username}.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            password: password,
+            userColor: "#2563eb", 
+            userTitle: username,  
+            userMessageColor: "#111827"
+        })
+    }); // <--- BURADAKİ PARANTEZLERİ KAPATMAYI UNUTMA
+
+    if (regRes.ok) loginSuccess(username);
+}
+    } catch (err) {
+        errorDiv.innerText = "Bağlantı hatası!";
+    }
+}
+
+function loginSuccess(username) {
+    localStorage.setItem("user", username);
+    showLoggedInState(username);
+}
+
+// Giriş başarısını kontrol eden fonksiyonu güncelle
+function showLoggedInState(username) {
+    document.getElementById("action-area").classList.remove("hidden");
+    document.getElementById("auth-box").classList.add("hidden");
+    document.getElementById("welcome-msg").classList.remove("hidden");
+    document.getElementById("user-display").innerText = username;
+    document.getElementById("logout-area").style.display = "flex";
+
+    const navSpans = document.querySelectorAll("#main-nav span:not(#count)");
+    navSpans.forEach(span => span.classList.add("enabled"));
+
+    // Admin Kontrolü
+    if (username === "197127") {
+        const adminContainer = document.getElementById("admin-main-container");
+        if(adminContainer) {
+            adminContainer.classList.remove("hidden");
+            renderAdminPanel();
+			renderServerManagement();
+        }
+    }
+}
+
+async function renderAdminPanel() {
+    try {
+        const [usersRes, serversRes] = await Promise.all([
+            fetch(`${baseDbUrl}/UserList.json`),
+            fetch(`${baseDbUrl}/ServerList.json`)
+        ]);
+        
+        const allUsers = await usersRes.json();
+        const serverData = await serversRes.json();
+        const container = document.getElementById("admin-users-list");
+        if(!container) return;
+        container.innerHTML = ""; 
+
+        for (let userId in allUsers) {
+            const user = allUsers[userId];
+            const userTitle = user.userTitle || userId;
+
+            const card = document.createElement("div");
+            card.className = "user-admin-card";
+            
+            // Yeni Başlık Yapısı (İkon En Solda)
+            const header = document.createElement("div");
+            header.className = "user-card-header";
+            header.innerHTML = `
+                <span class="chevron">▶</span>
+                <div class="user-info">
+                    ${userTitle} <span class="user-id-tag">#${userId}</span>
+                </div>
+            `;
+
+            const content = document.createElement("div");
+            content.className = "user-card-content";
+            content.innerHTML = `
+                <table class="server-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left; padding-left:15px;">Sunucu</th>
+                            <th>Tekli</th>
+                            <th>Çoklu</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-${userId}"></tbody>
+                </table>
+            `;
+
+            // Tıklama Olayı (İkon Dönme Efekti Dahil)
+            header.onclick = () => {
+                const isOpen = content.classList.toggle("open");
+                header.querySelector(".chevron").style.transform = isOpen ? "rotate(90deg)" : "rotate(0deg)";
+            };
+
+            card.appendChild(header);
+            card.appendChild(content);
+            container.appendChild(card);
+
+            const tbody = document.getElementById(`body-${userId}`);
+            
+            for (let deviceId in serverData) {
+                const deviceUserList = serverData[deviceId].UserList || {};
+                const tekKey = `${userId}_tek`;
+                const cokKey = `${userId}_cok`;
+                const serverName = deviceId.replace("Device", "Server ");
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td style="text-align:left; padding-left:15px; color:#374151; font-weight:500;">
+                        ${serverName}
+                    </td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${deviceUserList[tekKey] ? "checked" : ""} 
+                                   onchange="updateServerStatus('${deviceId}', '${tekKey}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${deviceUserList[cokKey] ? "checked" : ""} 
+                                   onchange="updateServerStatus('${deviceId}', '${cokKey}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+    } catch (err) {
+        console.error("Hata:", err);
+    }
+}
+
+// Tek bir global update fonksiyonu yeterlidir
+async function updateServerStatus(device, key, value) {
+    try {
+        await fetch(`${baseDbUrl}/ServerList/${device}/UserList.json`, {
+            method: 'PATCH',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ [key]: value })
+        });
+    } catch (err) {
+        console.error("Güncelleme hatası:", err);
+        alert("Veritabanı bağlantı hatası!");
+    }
+}
+
+function logout() {
+    localStorage.removeItem("user");
+    location.reload();
+}
+async function handleResetAction() {
+    const userId = localStorage.getItem("user");
+    if (!userId) return;
+
+    const btn = document.getElementById("reset-btn");
+    
+    try {
+        // 1. basketData içindeki kullanıcıya ait veriyi sil (DELETE)
+        await fetch(`${baseDbUrl}/basketData/${userId}.json`, { method: 'DELETE' });
+
+        // 2. UserList içindeki refresh değerini true yap (PATCH)
+        await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ refresh: true })
+        });
+
+        // 3. Zamanlayıcıyı başlat (60 saniye)
+        startTimer(60);
+      
+    } catch (err) {
+        console.error("İşlem hatası:", err);
+        alert("Bir hata oluştu.");
+    }
+}
+
+function startTimer(seconds) {
+    const expireTime = Date.now() + (seconds * 1000);
+    localStorage.setItem("timerExpire", expireTime);
+    runVisualTimer(expireTime);
+}
+
+function runVisualTimer(expireTime) {
+    const btn = document.getElementById("reset-btn");
+    const display = document.getElementById("timer-display");
+    
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+    btn.style.cursor = "not-allowed";
+
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.floor((expireTime - now) / 1000));
+
+        if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            display.innerText = "";
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.style.cursor = "pointer";
+            localStorage.removeItem("timerExpire");
+        } else {
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+    }, 1000);
+}
+
+function checkTimer() {
+    const expireTime = localStorage.getItem("timerExpire");
+    if (expireTime) {
+        const now = Date.now();
+        if (now < expireTime) {
+            runVisualTimer(parseInt(expireTime));
+        } else {
+            localStorage.removeItem("timerExpire");
+        }
+    }
+}
+</script>
+
+</body>
+</html>
