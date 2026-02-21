@@ -73,18 +73,24 @@
 
 <header>
     <span onclick="location.href='anasayfa.html'" style="cursor:pointer;">Anasayfa</span>
-    <span class="active">Sepet</span>
+    <span class="active" onclick="toggleUserSelector()" style="cursor:pointer; display: flex; align-items: center; gap: 5px;">
+        Sepet <small id="plus-icon" style="font-size: 16px; font-weight: bold;">+</small>
+    </span>
     <span onclick="location.href='mesaj.html'" style="cursor:pointer;">Mesajlar</span>
     <span id="count" style="background: #2563eb;">0</span>
 </header>
 
+<div id="user-selector-container" style="display: none; position: fixed; top: 50px; left: 0; width: 100%; background: #111827; padding: 10px; z-index: 999; border-bottom: 2px solid #2563eb; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+    <select id="userDropdown" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: white; font-size: 14px; outline: none; appearance: none; cursor: pointer;">
+        <option value="">🔍 Bir Kullanıcı Seçin...</option>
+    </select>
+</div>
 <div id="content">
     <div id="loaderArea" class="loader-wrapper">
         <div class="loader"></div>
         <p style="margin-top:10px; font-size:12px; color:#6b7280;">Sepet güncelleniyor...</p>
     </div>
 </div>
-
 <div id="mainModal" class="modal" onclick="if(event.target===this) closeModal()">
     <div class="modal-content">
         <h2 id="modalTitle" style="font-size: 16px;"></h2>
@@ -92,11 +98,10 @@
         <button class="close-btn" onclick="closeModal()">Kapat</button>
     </div>
 </div>
-
 <script>
 const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
 const contentDiv = document.getElementById("content");
-
+let currentTargetUserId = localStorage.getItem("user");
 // 1. CLEAR BASKET FONKSİYONU
 async function clearBasket() {
     const userId = localStorage.getItem("user");
@@ -113,28 +118,103 @@ async function clearBasket() {
         console.error("Sıfırlama hatası:", err);
     }
 }
+async function loadUserDropdown() {
+    const dropdown = document.getElementById("userDropdown");
+    try {
+        const res = await fetch(`${baseDbUrl}/UserList.json`);
+        const users = await res.json();
+        
+        for (let userId in users) {
+            const option = document.createElement("option");
+            option.value = userId;
+            option.textContent = users[userId].userTitle || userId; // Title yoksa ID yaz
+            dropdown.appendChild(option);
+        }
+    } catch (e) {
+        console.error("Kullanıcı listesi alınamadı:", e);
+    }
+}
 
-// 2. VERİ ÇEKME VE ZAMANASIMI YÖNETİMİ
-async function startApp() {
-    const userId = localStorage.getItem("user");
-    if (!userId) return location.href = "anasayfa.html";
+// 2. Dropdown Değiştiğinde Çalışacak Olay
+document.getElementById("userDropdown").addEventListener("change", async (e) => {
+    const selectedUserId = e.target.value;
+    if (!selectedUserId) return;
 
-    // Arka planda sepeti temizle
-    await clearBasket();
+    currentTargetUserId = selectedUserId; // Hedef kullanıcıyı güncelle
+    
+    // Loader'ı göster
+    contentDiv.innerHTML = `
+        <div id="loaderArea" class="loader-wrapper">
+            <div class="loader"></div>
+            <p style="margin-top:10px; font-size:12px; color:#6b7280;">${e.target.options[e.target.selectedIndex].text} sepeti çekiliyor...</p>
+        </div>`;
 
+    try {
+        // Seçilen kişinin refresh'ini true yap
+        await fetch(`${baseDbUrl}/UserList/${selectedUserId}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ refresh: true })
+        });
+
+        // Seçilen kişinin basketData'sını temizle (Sizin clearBasket mantığınız)
+        await fetch(`${baseDbUrl}/basketData/${selectedUserId}.json`, { method: 'DELETE' });
+
+        // Veri beklemeyi başlat
+        waitForData(selectedUserId);
+        
+    } catch (err) {
+        console.error("Hata:", err);
+    }
+});
+function toggleUserSelector() {
+    const container = document.getElementById("user-selector-container");
+    const icon = document.getElementById("plus-icon");
+    if (container.style.display === "none") {
+        container.style.display = "block";
+        icon.innerText = "−"; // Açılınca eksi olsun
+    } else {
+        container.style.display = "none";
+        icon.innerText = "+"; // Kapanınca artı olsun
+    }
+}
+
+// Dropdown seçiminden sonra otomatik kapatma ekleyelim
+document.getElementById("userDropdown").addEventListener("change", async (e) => {
+    const selectedUserId = e.target.value;
+    if (!selectedUserId) return;
+
+    // Seçim yapılınca paneli kapat
+    toggleUserSelector();
+
+    currentTargetUserId = selectedUserId;
+    
+    contentDiv.innerHTML = `
+        <div id="loaderArea" class="loader-wrapper">
+            <div class="loader"></div>
+            <p style="margin-top:10px; font-size:12px; color:#6b7280;">${e.target.options[e.target.selectedIndex].text} sepeti çekiliyor...</p>
+        </div>`;
+
+    try {
+        await fetch(`${baseDbUrl}/UserList/${selectedUserId}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ refresh: true })
+        });
+        await fetch(`${baseDbUrl}/basketData/${selectedUserId}.json`, { method: 'DELETE' });
+        waitForData(selectedUserId);
+    } catch (err) {
+        console.error("Hata:", err);
+    }
+});
+function waitForData(userId) {
     let dataReceived = false;
-
-    // 10 Saniyelik Zaman Aşımı Kontrolü
+    
     const timeout = setTimeout(() => {
         if (!dataReceived) {
+            clearInterval(checkInterval);
             showEmptyBasket();
         }
     }, 5000);
 
-    // Veriyi çekmek için periyodik kontrol veya tek seferlik istek
-    // (Firebase refresh true sonrası sistemin veri basması için biraz beklemek gerekebilir)
-    // Burada loadData'yı veri gelene kadar kısa aralıklarla deneyebiliriz:
-    
     const checkInterval = setInterval(async () => {
         const items = await fetchBasketItems(userId);
         if (items && items.length > 0) {
@@ -143,7 +223,21 @@ async function startApp() {
             clearTimeout(timeout);
             renderBasket(items);
         }
-    }, 2000); // Her 2 saniyede bir kontrol et
+    }, 1500);
+}
+async function startApp() {
+    const userId = localStorage.getItem("user");
+    if (!userId) return location.href = "anasayfa.html";
+    
+    await loadUserDropdown();
+    
+    // Sayfa ilk açıldığında kendi sepetimizi çekelim
+    waitForData(userId);
+    // Kendi refreshimizi de tetikleyelim
+    await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
+        method: 'PATCH',
+        body: JSON.stringify({ refresh: true })
+    });
 }
 
 async function fetchBasketItems(userId) {
