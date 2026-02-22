@@ -20,7 +20,7 @@ body {
 }
 header { 
     height: 55px;
-    background: #111827; 
+    background: #690000; 
     color: white; 
     padding: 0 20px; 
     display: flex; 
@@ -31,7 +31,7 @@ header {
     z-index: 1002;
 }
     header span { cursor: pointer; transition: 0.3s; }
-    header .active { background: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 13px; }
+    header .active { background: #000000; padding: 4px 10px; border-radius: 20px; font-size: 13px; }
 
     /* Chat alanı esnek olacak ama inputun üzerine binmeyecek */
 /* Chat alanını esnet ve boşlukları ayarla */
@@ -82,7 +82,7 @@ input {
 }
 
 #sendBtn { 
-    background: #2563eb; 
+    background: #000000; 
     color: white; 
     border: none; 
     width: 80px;
@@ -173,14 +173,26 @@ async function loadMessages() {
         }
 
         let chatHTML = "";
-        Object.keys(messages).forEach(id => {
-            const m = messages[id];
-            const uInfo = (users && users[m.user]) ? users[m.user] : {};
-            const isMe = m.user === currentUser;
+Object.keys(messages).forEach(id => {
+    const m = messages[id];
+    const uInfo = (users && users[m.user]) ? users[m.user] : {};
+    
+    // --- YENİ FİLTRELEME MANTIĞI BAŞLANGICI ---
+    // Mevcut giriş yapan kullanıcının title bilgisini alalım
+    const currentTitle = users[currentUser]?.userTitle || "";
+    const senderTitle = uInfo.userTitle || "";
 
-// loadMessages içinde productHTML değişkeninin olduğu yeri bununla değiştir:
+    // Eğer title'ların ilk 4 karakteri eşleşmiyorsa bu mesajı atla (gösterme)
+    if (currentTitle.substring(0, 4) !== senderTitle.substring(0, 4)) {
+        return; 
+    }
+    // --- YENİ FİLTRELEME MANTIĞI BİTİŞİ ---
 
-let productHTML = "";
+    const isMe = m.user === currentUser;
+    
+    // Ürün paylaşımı ve HTML oluşturma kodları burada aynen devam ediyor...
+    let productHTML = "";
+    // ... (kodun geri kalanı aynı)
 if (m.type === "product_share" && m.product) {
     const p = m.product;
     const safeDesc = p.description.replace(/'/g, "\\'");
@@ -207,12 +219,12 @@ if (m.type === "product_share" && m.product) {
 
             <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px;">
                 <div style="display: flex; gap: 4px;">
-                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">STOK</button>
-                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">HAREKET</button>
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#690000; color:white; border:none; border-radius:4px;">STOK</button>
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#690000; color:white; border:none; border-radius:4px;">HAREKET</button>
                 </div>
                 <div style="display: flex; gap: 4px;">
-                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">BARKOD</button>
-                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findSectionInfo('${p.orderProductId}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#2563eb; color:white; border:none; border-radius:4px;">SECTION</button>
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#690000; color:white; border:none; border-radius:4px;">BARKOD</button>
+                    <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findSectionInfo('${p.orderProductId}')" style="flex:1; padding:8px 4px; font-size:10px; font-weight:bold; background:#690000; color:white; border:none; border-radius:4px;">SECTION</button>
                 </div>
             </div>
         </div>

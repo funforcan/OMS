@@ -8,7 +8,7 @@
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f9; user-select: none; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; overflow-x: hidden;}
     
-    header { position: fixed; top: 0; left: 0; width: 100%; background: #111827; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-weight: bold; }
+    header { position: fixed; top: 0; left: 0; width: 100%; background: #690000; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-weight: bold; }
     
     /* Menü butonları varsayılan olarak pasif (tıklanamaz) */
     header span { 
@@ -25,7 +25,7 @@
 #action-area {
     transition: all 0.3s ease;
 }
-    header .active, #count { background: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 13px; opacity: 1; }
+    header .active, #count { background: #000000; padding: 4px 10px; border-radius: 20px; font-size: 13px; opacity: 1; }
     
 #content { 
     padding: 80px 20px 20px; 
@@ -46,7 +46,7 @@
     input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
     
     .btn-main { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; }
-    .login-toggle { background: #2563eb; }
+    .login-toggle { background: #000000; }
     .register-toggle { background: #10b981; }
     .action-btn { background: #111827; margin-top: 10px; }
 
@@ -54,7 +54,7 @@
 
     /* Çıkış Yap Butonu */
     #logout-area { width: 100%; padding: 20px; display: none; justify-content: center; }
-    .logout-btn { background: #ef4444; color: white; border: none; padding: 12px 40px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .logout-btn { background: #640000; color: white; border: none; padding: 12px 40px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
     .hidden { display: none !important; }
 /* Switch (Toggle) Buton Tasarımı */
@@ -69,7 +69,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .admin-main-card {
     width: 100%; /* %96'dan %98'e çıkarıldı, kenar boşlukları azaltıldı */
     max-width: 1500px; /* Maksimum genişlik artırıldı (veya tamamen kaldırabilirsin) */
-    background: #111827; 
+    background: #640000; 
     color: white;
     border-radius: 12px;
     margin: 10px auto; /* Üst-alt boşluk biraz azaltıldı */
@@ -105,7 +105,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.5s ease-in-out;
-    background: #f4f6f9; /* İçerik açıldığında yine açık renk olsun */
+    background: #940000; /* İçerik açıldığında yine açık renk olsun */
     padding: 0 10px;
 }
 
@@ -238,7 +238,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .loader {
     width: 50px;
     aspect-ratio: 1;
-    --_c: no-repeat radial-gradient(farthest-side, #2563eb 92%, #0000);
+    --_c: no-repeat radial-gradient(farthest-side, #690000 92%, #0000);
     background: 
         var(--_c) top,
         var(--_c) left,
@@ -269,6 +269,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     opacity: 1;
     transition: opacity 0.5s ease-in;
 }
+
 </style>
 </head>
 <body>
@@ -276,7 +277,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     <div class="loader"></div>
 </div>
 <header id="main-nav">
-    <span class="active">Ansayfa</span>
+    <span class="active">Anasayfa</span>
     <span id="nav-cart" onclick="navTo('index.html')">Sepet</span>
     <span id="nav-msg" onclick="navTo('mesaj.html')">Mesajlar</span>
 </header>
@@ -284,7 +285,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     <div id="auth-box" class="auth-container">
         <h2>E-Ticaret 3.0</h2>
         <button id="login-nav-btn" class="btn-main login-toggle" onclick="togglePanel('login')">Giriş Yap</button>
-        <button id="register-nav-btn" class="btn-main register-toggle" onclick="togglePanel('register')">Kayıt Ol</button>
+        <p style="margin-top:10px; text-align: center; font-size:12px; color:#6b7280;">Hesap oluşturmak için sistem yöneticisine başvurunuz!</p>
 
         <div id="form-panel" class="expandable-panel">
             <input type="text" id="username" placeholder="Sicil Numarası" />
@@ -295,7 +296,7 @@ input:checked + .slider:before { transform: translateX(20px); }
     </div>
 <div id="content">
     <div id="welcome-msg" class="hidden" style="text-align: center;">
-        <h3>Hoş geldin, <span id="user-display" style="color:#2563eb"></span>!</h3>
+        <h3>Hoş geldin, <span id="user-display" style="color:#940000"></span>!</h3>
     </div>
 
 <div id="admin-main-container" class="hidden">
@@ -318,6 +319,7 @@ input:checked + .slider:before { transform: translateX(20px); }
         <div id="server-main-content" class="admin-main-content">
             <div class="admin-action-row">
                 <button class="btn-reset-all" onclick="resetAllServers()">Sunucuları Yenile !</button>
+				<button class="btn-reset-all" onclick="clearAllMessages()">Tüm Mesajları Sil</button>
             </div>
             <div id="admin-server-list"></div>
         </div>
@@ -326,7 +328,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 </div>
 </div>
 </div>
-
 <div id="logout-area" style="flex-direction: column; align-items: center; gap: 10px;">
     <div id="action-area" class="hidden" style="text-align: center; padding: 15px; width: 100%; max-width: 320px;">
     </div>
@@ -335,6 +336,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 </div>
 
 <script>
+let isAdmin = false;
 const firebaseUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app/UserList";
 let currentMode = '';
 const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
@@ -360,6 +362,31 @@ window.onload = async () => {
     }, 800); // 800ms bekleme süresi (Göz yormayan bir geçiş için)
 };
 // Paneli Aç/Kapat
+async function clearAllMessages() {
+    // Sadece admin (197127) bu işlemi yapabilsin (güvenlik önlemi)
+    const currentUser = localStorage.getItem("user");
+    if (currentUser !== "197127") {
+        alert("Bu işlem için yetkiniz yok!");
+        return;
+    }
+
+    if (!confirm("TÜM mesaj geçmişini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) return;
+
+    try {
+        const res = await fetch(`${baseDbUrl}/messages.json`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            alert("Tüm mesajlar başarıyla temizlendi.");
+        } else {
+            throw new Error("Silme işlemi başarısız.");
+        }
+    } catch (err) {
+        console.error("Mesaj silme hatası:", err);
+        alert("Mesajlar silinirken bir hata oluştu!");
+    }
+}
 function toggleServerPanel() {
     const content = document.getElementById("server-main-content");
     const chevron = document.getElementById("server-main-chevron");
@@ -411,41 +438,51 @@ async function renderServerManagement() {
         if (!container) return;
         container.innerHTML = "";
 
-        for (let deviceId in serverData) {
-            const server = serverData[deviceId];
-            const isOnline = server.Status === true; // Status kontrolü
-            const serverName = deviceId.replace("Device", "Server ");
+for (let deviceId in serverData) {
+    const server = serverData[deviceId];
+    const isOnline = server.Status === true; 
+    const serverName = deviceId.replace("Device", "Server ");
 
-            const card = document.createElement("div");
-            card.className = `user-admin-card ${isOnline ? 'status-active' : 'status-passive'}`;
+    const card = document.createElement("div");
+    card.className = `user-admin-card ${isOnline ? 'status-active' : 'status-passive'}`;
 
-            card.innerHTML = `
-                <div class="server-card-header" onclick="toggleSubPanel('${deviceId}')">
-                    <div>
-                        <span class="status-dot" style="background:${isOnline ? '#10b981' : '#ef4444'}"></span>
-                        <b style="color:#111827">${serverName}</b>
-                    </div>
-                    <span id="chev-${deviceId}">▶</span>
-                </div>
-                <div id="content-${deviceId}" class="user-card-content">
-                    <table class="server-table">
-                        <tbody>
-                            <tr>
-                                <td style="text-align:left; padding-left:15px; color: black; font-weight: bold;">SUNUCU DURUMU : </td>
-                                <td>
-                                    <label class="switch">
-                                        <input type="checkbox" ${server.Server ? "checked" : ""} 
-                                               onchange="updateServerConfig('${deviceId}', 'Server', this.checked)">
-                                        <span class="slider"></span>
-                                    </label>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            container.appendChild(card);
-        }
+    card.innerHTML = `
+        <div class="server-card-header" onclick="toggleSubPanel('${deviceId}')">
+            <div>
+                <span class="status-dot" style="background:${isOnline ? '#10b981' : '#ef4444'}"></span>
+                <b style="color:#111827">${serverName}</b>
+            </div>
+            <span id="chev-${deviceId}">▶</span>
+        </div>
+        <div id="content-${deviceId}" class="user-card-content">
+            <table class="server-table">
+                <tbody>
+                    <tr>
+                        <td style="text-align:left; padding-left:15px; color: black; font-weight: bold;">SUNUCU DURUMU : </td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" ${server.Server ? "checked" : ""} 
+                                       onchange="updateServerConfig('${deviceId}', 'Server', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:left; padding-left:15px; color: black; font-weight: bold;">SUNUCU ERİŞİMİ : </td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" ${server.Active ? "checked" : ""} 
+                                       onchange="updateServerConfig('${deviceId}', 'Active', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    container.appendChild(card);
+}
     } catch (err) {
         console.error("Sunucu listesi hatası:", err);
     }
@@ -566,45 +603,62 @@ function loginSuccess(username) {
 // Giriş başarısını kontrol eden fonksiyonu güncelle
 // Giriş durumunu gösteren güncellenmiş fonksiyon
 async function showLoggedInState(username) {
+    isAdmin = (username === "197127");
     const userDisplay = document.getElementById("user-display");
     
     try {
         const res = await fetch(`${firebaseUrl}/${username}.json`);
         const userData = await res.json();
-        
-        if (userData && userData.userTitle) {
-            // İlk 7 karakteri kes (slice(7) ile 7. indeksten başlar)
-            const cleanTitle = userData.userTitle.slice(7); 
-            userDisplay.innerText = cleanTitle;
-        } else {
-            userDisplay.innerText = username;
-        }
+        userDisplay.innerText = (userData && userData.userTitle) ? userData.userTitle.slice(7) : username;
     } catch (err) {
-        console.error("Kullanıcı bilgisi çekilemedi:", err);
         userDisplay.innerText = username;
     }
 
-    // Diğer kodlar (admin kontrolü, logout-area görünürlüğü vs.) aynen kalıyor...
+    // Arayüz görünürlüğü
     document.getElementById("action-area").classList.remove("hidden");
     document.getElementById("auth-box").classList.add("hidden");
     document.getElementById("welcome-msg").classList.remove("hidden");
     document.getElementById("logout-area").style.display = "flex";
+    document.querySelectorAll("#main-nav span:not(#count)").forEach(span => span.classList.add("enabled"));
 
-    const navSpans = document.querySelectorAll("#main-nav span:not(#count)");
-    navSpans.forEach(span => span.classList.add("enabled"));
+    const adminContainer = document.getElementById("admin-main-container");
+    if(adminContainer) {
+        adminContainer.classList.remove("hidden");
+        
+        // Admin değilse Sunucu Yönetimi kartını gizle
+        const serverCard = document.querySelectorAll('.admin-main-card')[1];
+        if (!isAdmin && serverCard) serverCard.style.display = "none";
 
-    if (username === "197127") {
-        const adminContainer = document.getElementById("admin-main-container");
-        if(adminContainer) {
-            adminContainer.classList.remove("hidden");
-            renderAdminPanel();
-            renderServerManagement();
-        }
+        // ANLIK DİNLEMEYİ BAŞLAT
+        startRealtimeListeners();
     }
+}
+
+// Veritabanındaki değişiklikleri anlık takip eden fonksiyon
+function startRealtimeListeners() {
+    // Hem kullanıcı listesini hem sunucu listesini dinle
+    const paths = ["UserList", "ServerList"];
+    
+    paths.forEach(path => {
+        const eventSource = new EventSource(`${baseDbUrl}/${path}.json`);
+        
+        eventSource.addEventListener('put', (e) => {
+            // Veri her değiştiğinde panelleri sessizce yeniden oluştur
+            renderAdminPanel();
+            if (isAdmin) renderServerManagement();
+        });
+
+        eventSource.onerror = (err) => {
+            console.error("Bağlantı koptu, yeniden deneniyor...", err);
+            eventSource.close();
+            setTimeout(startRealtimeListeners, 5000);
+        };
+    });
 }
 
 async function renderAdminPanel() {
     try {
+        const currentLoggedUser = localStorage.getItem("user");
         const [usersRes, serversRes] = await Promise.all([
             fetch(`${baseDbUrl}/UserList.json`),
             fetch(`${baseDbUrl}/ServerList.json`)
@@ -614,79 +668,82 @@ async function renderAdminPanel() {
         const serverData = await serversRes.json();
         const container = document.getElementById("admin-users-list");
         if(!container) return;
+
+        const openPanels = Array.from(document.querySelectorAll('.user-card-content.open')).map(el => el.id);
         container.innerHTML = ""; 
 
         for (let userId in allUsers) {
+            if (!isAdmin && userId !== currentLoggedUser) continue;
+
             const user = allUsers[userId];
             const userTitle = user.userTitle || userId;
+            const contentId = `user-content-${userId}`;
 
             const card = document.createElement("div");
             card.className = "user-admin-card";
-            
-            const header = document.createElement("div");
-            header.className = "user-card-header";
-            header.innerHTML = `
-                <span class="chevron">▶</span>
-                <div class="user-info">
-                    ${userTitle} <span class="user-id-tag">#${userId}</span>
+            const isInitiallyOpen = openPanels.includes(contentId);
+
+            card.innerHTML = `
+                <div class="user-card-header" onclick="toggleUserPanel('${userId}')">
+                    <span class="chevron ${isInitiallyOpen ? 'open-icon' : ''}" id="chev-user-${userId}">▶</span>
+                    <div class="user-info">
+                        ${userTitle} <span class="user-id-tag">#${userId}</span>
+                    </div>
                 </div>
+                <div id="${contentId}" class="user-card-content ${isInitiallyOpen ? 'open' : ''}">
+                    <table class="server-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left; padding-left:15px;">Sunucu</th>
+                                <th>Tekli</th>
+                                <th>Çoklu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-${userId}"></tbody>
+                    </table>
+                </div>
+				<p style="margin-top:10px; text-align: center; font-size:12px; color:#6b7280;">Sunucuların erişime açılması ve kapatılması sistem sağlığı için Admin kontrolündedir.</p>
             `;
-
-            const content = document.createElement("div");
-            content.className = "user-card-content";
-            content.innerHTML = `
-                <table class="server-table">
-                    <thead>
-                        <tr>
-                            <th style="text-align:left; padding-left:15px;">Sunucu</th>
-                            <th>Tekli</th>
-                            <th>Çoklu</th>
-                        </tr>
-                    </thead>
-                    <tbody id="body-${userId}"></tbody>
-                </table>
-            `;
-
-            header.onclick = () => {
-                const isOpen = content.classList.toggle("open");
-                header.querySelector(".chevron").style.transform = isOpen ? "rotate(90deg)" : "rotate(0deg)";
-            };
-
-            card.appendChild(header);
-            card.appendChild(content);
             container.appendChild(card);
 
             const tbody = document.getElementById(`body-${userId}`);
-            
             for (let deviceId in serverData) {
-                const deviceUserList = serverData[deviceId].UserList || {};
+                const device = serverData[deviceId];
                 const tekKey = `${userId}_tek`;
                 const cokKey = `${userId}_cok`;
-                const serverName = deviceId.replace("Device", "Server ");
                 
-                // --- YENİ EKLEDİĞİMİZ KISIM ---
-                // Status true ise yeşil tik, false ise kırmızı çarpı
-                const isOnline = serverData[deviceId].Server === true;
-                const statusIcon = isOnline 
-                    ? '<span style="color: #10b981; margin-right: 5px;">✔</span>' 
-                    : '<span style="color: #ef4444; margin-right: 5px;">✖</span>';
-                // ------------------------------
+                // --- YENİ MANTIK ---
+                // canUse: Admin ise her zaman true, değilse Active verisine bağlı
+                const canUse = isAdmin || (device.Active === true);
+                
+                // isOnline: Sadece görsel simge için Status verisine bağlı
+                const isOnline = (device.Status === true); 
 
                 const tr = document.createElement("tr");
+                // Eğer Active false ise ve admin değilsek satırı soluklaştır
+                if(!canUse) tr.style.opacity = "0.4";
+
                 tr.innerHTML = `
                     <td style="text-align:left; padding-left:15px; color:#374151; font-weight:500;">
-                        ${statusIcon} ${serverName}
+                        <span style="color: ${isOnline ? '#10b981' : '#ef4444'}; margin-right: 5px;">
+                            ${isOnline ? '✔' : '✖'}
+                        </span> 
+                        ${deviceId.replace("Device", "Server ")}
                     </td>
                     <td>
                         <label class="switch">
-                            <input type="checkbox" ${deviceUserList[tekKey] ? "checked" : ""} 
+                            <input type="checkbox" 
+                                   ${(device.UserList && device.UserList[tekKey]) ? "checked" : ""} 
+                                   ${!canUse ? "disabled" : ""}
                                    onchange="updateServerStatus('${deviceId}', '${tekKey}', this.checked)">
                             <span class="slider"></span>
                         </label>
                     </td>
                     <td>
                         <label class="switch">
-                            <input type="checkbox" ${deviceUserList[cokKey] ? "checked" : ""} 
+                            <input type="checkbox" 
+                                   ${(device.UserList && device.UserList[cokKey]) ? "checked" : ""} 
+                                   ${!canUse ? "disabled" : ""}
                                    onchange="updateServerStatus('${deviceId}', '${cokKey}', this.checked)">
                             <span class="slider"></span>
                         </label>
@@ -695,11 +752,16 @@ async function renderAdminPanel() {
                 tbody.appendChild(tr);
             }
         }
-    } catch (err) {
-        console.error("Hata:", err);
+    } catch (err) { console.error("Panel yükleme hatası:", err); }
+}
+function toggleUserPanel(userId) {
+    const content = document.getElementById(`user-content-${userId}`);
+    const chev = document.getElementById(`chev-user-${userId}`);
+    if(content) {
+        const isOpen = content.classList.toggle("open");
+        if(chev) chev.style.transform = isOpen ? "rotate(90deg)" : "rotate(0deg)";
     }
 }
-
 // Tek bir global update fonksiyonu yeterlidir
 async function updateServerStatus(device, key, value) {
     try {

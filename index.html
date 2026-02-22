@@ -7,10 +7,12 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         /* CSS AYNI KALIYOR */
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f9; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
-        header { position: fixed; top: 0; left: 0; width: 100%; background: #111827; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-weight: bold; }
-        header .active, #count { background: #2563eb; padding: 4px 10px; border-radius: 20px; font-size: 13px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f9; user-select: none; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; overflow-x: hidden;}
+    
+    header { position: fixed; top: 0; left: 0; width: 100%; background: #690000; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-weight: bold; }
+    
+        header .active, #count { background: #000000; padding: 4px 10px; border-radius: 20px; font-size: 13px; }
         #content { padding: 70px 10px 20px; min-height: 100vh; }
         .container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .card { background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
@@ -25,7 +27,7 @@
         .timer-text { font-size: 10px; font-weight: bold; color: #4b5563; margin-top: 3px; }
         .button-group { display: flex; flex-direction: column; gap: 4px; padding: 10px; }
         .btn-row { display: flex; gap: 4px; }
-        .button-group button { flex: 1; padding: 8px; border: none; border-radius: 4px; font-size: 11px; font-weight: bold; background: #2563eb; color: white; cursor: pointer; }
+        .button-group button { flex: 1; padding: 8px; border: none; border-radius: 4px; font-size: 11px; font-weight: bold; background: #690000; color: white; cursor: pointer; }
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center; }
         .close-btn { margin-top: 15px; padding: 10px 20px; background: #111827; color: white; border: none; border-radius: 6px; width: 100%; }
@@ -45,7 +47,7 @@
         .loader {
           width: 50px;
           aspect-ratio: 1;
-          --_c:no-repeat radial-gradient(farthest-side,#2563eb 92%,#0000);
+          --_c:no-repeat radial-gradient(farthest-side,#690000 92%,#0000);
           background: 
             var(--_c) top,
             var(--_c) left,
@@ -77,11 +79,11 @@
         Sepet <small id="plus-icon" style="font-size: 16px; font-weight: bold;">+</small>
     </span>
     <span onclick="location.href='mesaj.html'" style="cursor:pointer;">Mesajlar</span>
-    <span id="count" style="background: #2563eb;">0</span>
+    <span id="count" style="background: #000000;">0</span>
 </header>
 
-<div id="user-selector-container" style="display: none; position: fixed; top: 50px; left: 0; width: 100%; background: #111827; padding: 10px; z-index: 999; border-bottom: 2px solid #2563eb; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-    <select id="userDropdown" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: white; font-size: 14px; outline: none; appearance: none; cursor: pointer;">
+<div id="user-selector-container" style="display: none; position: fixed; top: 50px; left: 0; width: 100%; background: #690000; padding: 10px; z-index: 999; border-bottom: 2px solid #2563eb; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+    <select id="userDropdown" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #374151; background: #000000; color: white; font-size: 14px; outline: none; appearance: none; cursor: pointer;">
         <option value="">🔍 Bir Kullanıcı Seçin...</option>
     </select>
 </div>
@@ -99,6 +101,7 @@
     </div>
 </div>
 <script>
+let currentRequestId = 0; // Her isteğe özel bir ID vereceğiz
 const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
 const contentDiv = document.getElementById("content");
 let currentTargetUserId = localStorage.getItem("user");
@@ -120,18 +123,36 @@ async function clearBasket() {
 }
 async function loadUserDropdown() {
     const dropdown = document.getElementById("userDropdown");
+    const currentUserId = localStorage.getItem("user");
+    
     try {
         const res = await fetch(`${baseDbUrl}/UserList.json`);
         const users = await res.json();
         
+        const currentUserData = users[currentUserId] || {};
+        const currentUserTitle = currentUserData.userTitle || "Benim Sepetim";
+        
+        const isAdmin = (currentUserTitle === "CM76 - Can");
+        let myKey = currentUserTitle.substring(0, 4);
+
+        // Dropdown'ı temizle ve İLK SEÇENEĞİ giriş yapan kullanıcı yap
+        dropdown.innerHTML = `<option value="${currentUserId}">Sepetim (${currentUserTitle})</option>`;
+        
         for (let userId in users) {
-            const option = document.createElement("option");
-            option.value = userId;
-            option.textContent = users[userId].userTitle || userId; // Title yoksa ID yaz
-            dropdown.appendChild(option);
+            // Kendini tekrar listede (aşağıda) gösterme
+            if (userId === currentUserId) continue;
+
+            const targetUserTitle = users[userId].userTitle || "";
+            
+            if (isAdmin || targetUserTitle.startsWith(myKey)) {
+                const option = document.createElement("option");
+                option.value = userId;
+                option.textContent = targetUserTitle || userId;
+                dropdown.appendChild(option);
+            }
         }
     } catch (e) {
-        console.error("Kullanıcı listesi alınamadı:", e);
+        console.error("Kullanıcı listesi yükleme hatası:", e);
     }
 }
 
@@ -169,12 +190,14 @@ document.getElementById("userDropdown").addEventListener("change", async (e) => 
 function toggleUserSelector() {
     const container = document.getElementById("user-selector-container");
     const icon = document.getElementById("plus-icon");
-    if (container.style.display === "none") {
-        container.style.display = "block";
-        icon.innerText = "−"; // Açılınca eksi olsun
+    
+    // Display kontrolünü daha sağlam yapalım
+    if (container.style.display === "none" || container.style.display === "") {
+        container.style.setProperty('display', 'block', 'important');
+        icon.innerText = "−";
     } else {
         container.style.display = "none";
-        icon.innerText = "+"; // Kapanınca artı olsun
+        icon.innerText = "+";
     }
 }
 
@@ -206,18 +229,30 @@ document.getElementById("userDropdown").addEventListener("change", async (e) => 
     }
 });
 function waitForData(userId) {
+    // Mevcut istek ID'sini artırarak bir öncekini "eskitiyoruz"
+    const thisRequestId = ++currentRequestId; 
     let dataReceived = false;
     
     const timeout = setTimeout(() => {
-        if (!dataReceived) {
+        // Eğer hala aynı istekteiysek ve veri gelmediyse boş sepet göster
+        if (!dataReceived && thisRequestId === currentRequestId) {
             clearInterval(checkInterval);
             showEmptyBasket();
         }
-    }, 5000);
+    }, 8000); // 5 saniye bazen yavaş bağlantıda yetmeyebilir, 8 idealdir.
 
     const checkInterval = setInterval(async () => {
+        // Eğer kullanıcı başka bir seçim yaptıysa bu döngüyü tamamen durdur
+        if (thisRequestId !== currentRequestId) {
+            clearInterval(checkInterval);
+            clearTimeout(timeout);
+            return;
+        }
+
         const items = await fetchBasketItems(userId);
-        if (items && items.length > 0) {
+        
+        // Veri geldiğinde hala doğru istekte miyiz kontrol et
+        if (items && items.length > 0 && thisRequestId === currentRequestId) {
             dataReceived = true;
             clearInterval(checkInterval);
             clearTimeout(timeout);
@@ -227,17 +262,26 @@ function waitForData(userId) {
 }
 async function startApp() {
     const userId = localStorage.getItem("user");
-    if (!userId) return location.href = "anasayfa.html";
+    if (!userId) {
+        // Kullanıcı yoksa boş sepet göster ve dropdown'ı yükle
+        await loadUserDropdown();
+        showEmptyBasket();
+        return;
+    }
     
+    // Önce listeyi doldur ki panel çalışabilsin
     await loadUserDropdown();
     
-    // Sayfa ilk açıldığında kendi sepetimizi çekelim
+    // Kendi verimizi istemeden önce tetikleyelim
+    try {
+        await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ refresh: true })
+        });
+    } catch(e) { console.error("Refresh hatası:", e); }
+
+    // Veri beklemeyi başlat
     waitForData(userId);
-    // Kendi refreshimizi de tetikleyelim
-    await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
-        method: 'PATCH',
-        body: JSON.stringify({ refresh: true })
-    });
 }
 
 async function fetchBasketItems(userId) {
@@ -254,9 +298,18 @@ function renderBasket(items) {
     document.getElementById("count").innerText = items.length + " ürün";
     contentDiv.innerHTML = `<div class="container">${items.map(p => {
         const safeDesc = p.description.replace(/'/g, "\\'");
+        const productJson = JSON.stringify(p).replace(/"/g, '&quot;');
+        
         return `
-<div class="card" onclick="handleDoubleClick('${p.orderProductId}')">
-    <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/784/1080/")}" alt="">
+<div class="card" 
+     onclick="handleDoubleClick('${p.orderProductId}')"
+     onmousedown="startPress(event, ${productJson})" 
+     onmouseup="cancelPress()" 
+     onmouseleave="cancelPress()"
+     ontouchstart="startPress(event, ${productJson})" 
+     ontouchend="cancelPress()">
+     
+    <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/784/1080/")}" alt="" pointer-events: none;>
     <div class="card-content">
         <div class="brand">${p.brand}</div>
         <div class="desc">${p.description}</div>
@@ -268,7 +321,6 @@ function renderBasket(items) {
         </div>
     </div>
     <div class="button-group">
-        <button onclick="event.stopPropagation(); shareProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})" style="background:#10b981; margin-bottom:4px; width:100%;">📢 YARDIM İSTE!</button>
         <div class="btn-row">
             <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')">STOK</button>
             <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')">HAREKET</button>
@@ -289,12 +341,51 @@ function showEmptyBasket() {
             <div class="icon">🛒</div>
             <h2>Sepetinizde ürün bulunmamaktadır. :(</h2>
             <p style="color: #6b7280; font-size: 14px;">Ansayfaya dönüp talep durumunu görüntüleyebilir ya da Mesajlar kısmından talep yok diyerek ağlayabilirsiniz.</p>
-            <button onclick="location.href='mesaj.html'" style="margin-top:20px; padding:10px 20px; background:#2563eb; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">
+            <button onclick="location.href='mesaj.html'" style="margin-top:20px; padding:10px 20px; background:#690000; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">
                 Mesajlar
             </button>
         </div>`;
 }
+let pressTimer;
+let startX, startY;
 
+function startPress(event, product) {
+    if (event.target.tagName === 'BUTTON') return;
+
+    // Başlangıç koordinatlarını al
+    const touch = event.touches ? event.touches[0] : event;
+    startX = touch.clientX;
+    startY = touch.clientY;
+
+    pressTimer = window.setTimeout(function() {
+        confirmShare(product);
+    }, 2000); 
+}
+
+function cancelPress(event) {
+    clearTimeout(pressTimer);
+}
+
+// Parmağını hareket ettirirse (Scroll yaparsa) iptal et
+function handleMove(event) {
+    if (!startX || !startY) return;
+
+    const touch = event.touches ? event.touches[0] : event;
+    const moveX = Math.abs(touch.clientX - startX);
+    const moveY = Math.abs(touch.clientY - startY);
+
+    // Eğer 10 pikselden fazla hareket varsa kaydırıyor demektir, işlemi iptal et
+    if (moveX > 10 || moveY > 10) {
+        clearTimeout(pressTimer);
+    }
+}
+
+function confirmShare(product) {
+    const check = confirm(`${product.brand} - ${product.description} ürününü paylaşacaksınız. Onaylıyor musunuz?`);
+    if (check) {
+        shareProduct(product);
+    }
+}
 // Sayfa yüklendiğinde başlat
 startApp();
 
