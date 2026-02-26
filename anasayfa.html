@@ -320,11 +320,33 @@ input:checked + .slider:before { transform: translateX(20px); }
             <div class="admin-action-row">
                 <button class="btn-reset-all" onclick="resetAllServers()">Sunucuları Yenile !</button>
 				<button class="btn-reset-all" onclick="clearAllMessages()">Tüm Mesajları Sil</button>
+				<button class="btn-reset-all" onclick="clearAllLogs()">Tüm Logları Sil</button>
             </div>
             <div id="admin-server-list"></div>
         </div>
     </div>
-    
+    <div class="admin-main-card">
+    <div class="admin-main-header" onclick="toggleLogsPanel()">
+        <span>📜 Kullanıcı Logları</span>
+        <span id="logs-main-chevron">▼</span>
+    </div>
+    <div id="logs-main-content" class="admin-main-content">
+        <div id="logs-list" style="background: #fff; color: #333; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+            Henüz ilgili log bulunamadı...
+        </div>
+    </div>
+</div>
+<div id="admin-master-card" class="admin-main-card hidden">
+    <div class="admin-main-header" onclick="toggleMasterPanel()">
+        <span>🛠️ Sunucu Logları</span>
+        <span id="master-chevron">▼</span>
+    </div>
+    <div id="master-main-content" class="admin-main-content">
+        <div id="master-list" style="background: #111; color: #0f0; padding: 10px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 11px; max-height: 400px; overflow-y: auto; border: 1px solid #333;">
+            Sistem bekleniyor...
+        </div>
+    </div>
+</div>
 </div>
 </div>
 </div>
@@ -334,7 +356,9 @@ input:checked + .slider:before { transform: translateX(20px); }
     
     <button class="logout-btn" onclick="logout()">Çıkış Yap!</button>
 </div>
-
+<audio id="bing-sound" preload="auto">
+    <source src="pop.wav" type="audio/wav">
+</audio>
 <script>
 let isAdmin = false;
 const firebaseUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app/UserList";
@@ -624,7 +648,10 @@ async function showLoggedInState(username) {
     const adminContainer = document.getElementById("admin-main-container");
     if(adminContainer) {
         adminContainer.classList.remove("hidden");
-        
+        if (isAdmin) {
+    document.getElementById("admin-master-card").classList.remove("hidden");
+    renderMasterLogs(); // İlk yüklemede çek
+}
         // Admin değilse Sunucu Yönetimi kartını gizle
         const serverCard = document.querySelectorAll('.admin-main-card')[1];
         if (!isAdmin && serverCard) serverCard.style.display = "none";
@@ -636,20 +663,21 @@ async function showLoggedInState(username) {
 
 // Veritabanındaki değişiklikleri anlık takip eden fonksiyon
 function startRealtimeListeners() {
-    // Hem kullanıcı listesini hem sunucu listesini dinle
     const paths = ["UserList", "ServerList"];
     
     paths.forEach(path => {
         const eventSource = new EventSource(`${baseDbUrl}/${path}.json`);
         
-        eventSource.addEventListener('put', (e) => {
-            // Veri her değiştiğinde panelleri sessizce yeniden oluştur
-            renderAdminPanel();
-            if (isAdmin) renderServerManagement();
-        });
+eventSource.addEventListener('put', (e) => {
+    renderAdminPanel();
+    if (isAdmin) {
+        renderServerManagement();
+        renderMasterLogs(); // Admin panelini canlı güncelle
+    }
+    renderLogs();
+});
 
         eventSource.onerror = (err) => {
-            console.error("Bağlantı koptu, yeniden deneniyor...", err);
             eventSource.close();
             setTimeout(startRealtimeListeners, 5000);
         };
@@ -848,6 +876,210 @@ function checkTimer() {
         } else {
             localStorage.removeItem("timerExpire");
         }
+    }
+}
+function toggleLogsPanel() {
+    const content = document.getElementById("logs-main-content");
+    const chevron = document.getElementById("logs-main-chevron");
+    const isOpen = content.classList.toggle("open");
+    
+    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+    
+    // Panel ilk kez açılıyorsa veya açıldığında taze veri istiyorsak
+    if(isOpen) {
+        renderLogs(); 
+    }
+}
+
+// Logları çekme ve filtreleme fonksiyonu
+let lastProcessedLog = ""; // Sayfa açıkken son çalınan sesi takip eder
+
+async function renderLogs() {
+    const container = document.getElementById("logs-list");
+    const currentUserId = localStorage.getItem("user");
+    const bingSound = document.getElementById("bing-sound");
+    
+    if (!currentUserId) return;
+
+    try {
+        const res = await fetch(`${baseDbUrl}/ServerList.json`);
+        const serverData = await res.json();
+        let allLogs = []; 
+
+        for (let deviceId in serverData) {
+            const device = serverData[deviceId];
+            if (device.logs) {
+                Object.values(device.logs).forEach(logMessage => {
+                    if (String(logMessage).includes(currentUserId)) {
+                        let cleanedMessage = logMessage.replace(currentUserId + ":", "");
+                        cleanedMessage = cleanedMessage.replace("(Uzaktan)", "").trim();
+                        if (!cleanedMessage.endsWith(".")) cleanedMessage += ".";
+
+                        const timePart = cleanedMessage.split(" : ")[0] || "00:00:00";
+
+                        allLogs.push({
+                            device: deviceId.replace("Device", "Server "),
+                            message: cleanedMessage,
+                            time: timePart,
+                            raw: logMessage // Ses kontrolü için ham mesajı tutalım
+                        });
+                    }
+                });
+            }
+        }
+
+        // Saate göre sırala
+        allLogs.sort((a, b) => b.time.localeCompare(a.time));
+
+        // --- SES ÇALMA MANTIĞI ---
+        if (allLogs.length > 0) {
+            const latestLog = allLogs[0]; // En yeni log (sıralandığı için)
+            
+            // Eğer en yeni log "Eklendi" içeriyorsa VE daha önce bu mesaj için ses çalınmadıysa
+            if (latestLog.message.includes("Eklendi") && lastProcessedLog !== latestLog.raw) {
+                bingSound.play().catch(e => console.log("Ses çalma engellendi: ", e));
+                lastProcessedLog = latestLog.raw; // Aynı log için tekrar çalmasın
+            }
+        }
+        // -------------------------
+
+        // Arayüzü çizdirme (Map kısmı aynı kalıyor)
+        if (allLogs.length > 0) {
+            container.innerHTML = allLogs.map(log => {
+                const parts = log.message.split(" : ");
+                const timeDisplay = parts[0] || "";
+                const actionPart = parts[1] || log.message;
+
+                let actionBgColor = "#ffffff"; 
+                if (actionPart.includes("Etkisizleştirildi")) actionBgColor = "#FF5454";
+                else if (actionPart.includes("Etkinleştirildi")) actionBgColor = "#73FF7A";
+                else if (actionPart.includes("Eklendi")) actionBgColor = "#00FFFF";
+
+                return `
+                    <div style="margin-bottom: 10px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd;">
+                        <div style="background-color: #690000; color: white; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;">
+                            <b style="font-size: 11px; text-transform: uppercase;">${log.device}</b>
+                            <span style="font-size: 10px; opacity: 0.9; font-weight: bold;">${timeDisplay}</span>
+                        </div>
+                        <div style="background-color: ${actionBgColor}; padding: 12px; color: #000; font-size: 13px; font-weight: 600;">
+                            ${actionPart}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        } else {
+            container.innerHTML = "<div style='color:#333; text-align:center; padding:20px;'>Kayıt bulunamadı.</div>";
+        }
+        
+    } catch (err) {
+        console.error("Log hatası:", err);
+    }
+}
+// Master Paneli Aç/Kapat
+function toggleMasterPanel() {
+    const content = document.getElementById("master-main-content");
+    const chevron = document.getElementById("master-chevron");
+    const isOpen = content.classList.toggle("open");
+    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
+    if(isOpen) renderMasterLogs();
+}
+
+async function renderMasterLogs() {
+    // Sadece admin (197127) ise çalıştır
+    if (localStorage.getItem("user") !== "197127") return;
+
+    const container = document.getElementById("master-list");
+    try {
+        const res = await fetch(`${baseDbUrl}/ServerList.json`);
+        const serverData = await res.json();
+        let allMasterLogs = [];
+
+        for (let deviceId in serverData) {
+            const device = serverData[deviceId];
+            if (device.logs) {
+                Object.values(device.logs).forEach(logMsg => {
+                    // 1. Saati ayıklayalım (Baştaki [Saat] için)
+                    const timePart = String(logMsg).split(" : ")[0] || "00:00:00";
+                    
+                    // 2. Mesaj içeriğini temizleyelim (ID'yi koruyarak)
+                    // Baştaki saati ve " : " kısmını atıyoruz
+                    let cleanContent = String(logMsg).includes(" : ") ? String(logMsg).split(" : ").slice(1).join(" : ") : logMsg;
+                    
+                    // "(Uzaktan)" yazısını silelim
+                    cleanContent = cleanContent.replace("(Uzaktan)", "").trim();
+                    
+                    allMasterLogs.push({
+                        device: deviceId.replace("Device", "Server "), // S2 yerine Server 2
+                        content: cleanContent,
+                        time: timePart
+                    });
+                });
+            }
+        }
+
+        // Saate göre sırala (En yeni en üstte)
+        allMasterLogs.sort((a, b) => b.time.localeCompare(a.time));
+
+        // Ekrana yazdır (Başlık şeridi eklenmiş format)
+        container.innerHTML = allMasterLogs.map(log => `
+            <div style="margin-bottom: 8px; border-left: 3px solid #690000; background: #1a1a1a; border-radius: 4px; overflow: hidden;">
+                <div style="background: #2a2a2a; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
+                    <b style="color: #ff4444; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">${log.device}</b>
+                    <span style="color: #888; font-size: 10px; font-weight: bold;">[${log.time}]</span>
+                </div>
+                <div style="padding: 8px 10px; color: #0f0; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">
+                    ${log.content}
+                </div>
+            </div>
+        `).join("");
+
+    } catch (err) { 
+        console.error("Master log hatası:", err); 
+    }
+}
+async function clearAllLogs() {
+    // Sadece admin (197127) yetkisine sahip mi kontrol et
+    const currentUser = localStorage.getItem("user");
+    if (currentUser !== "197127") {
+        alert("Bu işlem için yetkiniz yok!");
+        return;
+    }
+
+    if (!confirm("TÜM sunuculardaki log geçmişini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) return;
+
+    try {
+        // 1. Önce mevcut sunucu listesini alalım
+        const res = await fetch(`${baseDbUrl}/ServerList.json`);
+        const serverData = await res.json();
+        
+        if (!serverData) return;
+
+        const updates = {};
+        // 2. Her cihazın altındaki 'logs' kısmını null (boş) olarak işaretle
+        for (let deviceId in serverData) {
+            updates[`${deviceId}/logs`] = null;
+        }
+
+        // 3. Tek bir PATCH isteği ile tüm logları temizle
+        const patchRes = await fetch(`${baseDbUrl}/ServerList.json`, {
+            method: 'PATCH',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updates)
+        });
+
+        if (patchRes.ok) {
+            alert("Tüm sistem logları başarıyla temizlendi.");
+            // Ekrandaki listeleri de anında boşaltalım
+            document.getElementById("logs-list").innerHTML = "Loglar temizlendi.";
+            if(document.getElementById("master-list")) {
+                document.getElementById("master-list").innerHTML = "Sistem temizlendi.";
+            }
+        } else {
+            throw new Error("Silme işlemi başarısız.");
+        }
+    } catch (err) {
+        console.error("Log silme hatası:", err);
+        alert("Loglar silinirken bir hata oluştu!");
     }
 }
 </script>
