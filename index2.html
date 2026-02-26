@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FunForCan - Sepet</title>
+    <title>FunForCan - Çoklu Sepet</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
         /* CSS AYNI KALIYOR */
@@ -69,16 +69,54 @@
         }
         .empty-basket h2 { color: #4b5563; font-size: 18px; margin-bottom: 10px; }
         .empty-basket .icon { font-size: 50px; margin-bottom: 15px; }
+		/* Yeni Akordiyon Stilleri */
+.bin-header {
+    background: #690000;
+    color: #fff;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.bin-header:active { background: #4a0000; }
+
+.bin-content {
+    max-height: 5000px; /* Çok ürün olsa da kapsasın */
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, opacity 0.3s;
+    opacity: 1;
+}
+
+.bin-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.chevron {
+    transition: transform 0.3s;
+    font-size: 18px;
+}
+
+.collapsed + .bin-content .chevron { /* Bu selektör JS ile yönetilecek */ }
+.rotate-icon { transform: rotate(180deg); }
     </style>
 </head>
 <body>
 
 <header>
     <span onclick="location.href='anasayfa.html'" style="cursor:pointer;">Anasayfa</span>
+	<span onclick="location.href='index.html'" style="cursor:pointer;">Sepet</span>
     <span class="active" onclick="toggleUserSelector()" style="cursor:pointer; display: flex; align-items: center; gap: 5px;">
-        Sepet <small id="plus-icon" style="font-size: 16px; font-weight: bold;">+</small>
+        Çoklu <small id="plus-icon" style="font-size: 16px; font-weight: bold;">+</small>
     </span>
-	    <span onclick="location.href='index2.html'" style="cursor:pointer;">Çoklu</span>
     <span onclick="location.href='mesaj.html'" style="cursor:pointer;">Mesajlar</span>
     <span id="count" style="background: #000000;">0</span>
 </header>
@@ -112,12 +150,12 @@ async function clearBasket() {
     if (!userId) return;
 
     try {
-        await fetch(`${baseDbUrl}/basketData/${userId}.json`, { method: 'DELETE' });
+        await fetch(`${baseDbUrl}/basketData2/${userId}.json`, { method: 'DELETE' });
         await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
             method: 'PATCH',
-            body: JSON.stringify({ refresh: true })
+            body: JSON.stringify({ refresh2: true })
         });
-        console.log("Sıfırlama talebi gönderildi.");
+        console.log("Sıfırlama talebi gönderildi (basketData2).");
     } catch (err) {
         console.error("Sıfırlama hatası:", err);
     }
@@ -172,10 +210,10 @@ document.getElementById("userDropdown").addEventListener("change", async (e) => 
         </div>`;
 
     try {
-        // Seçilen kişinin refresh'ini true yap
+        // Seçilen kişinin refresh2'ini true yap
         await fetch(`${baseDbUrl}/UserList/${selectedUserId}.json`, {
             method: 'PATCH',
-            body: JSON.stringify({ refresh: true })
+            body: JSON.stringify({ refresh2: true })
         });
 
         // Seçilen kişinin basketData'sını temizle (Sizin clearBasket mantığınız)
@@ -221,7 +259,7 @@ document.getElementById("userDropdown").addEventListener("change", async (e) => 
     try {
         await fetch(`${baseDbUrl}/UserList/${selectedUserId}.json`, {
             method: 'PATCH',
-            body: JSON.stringify({ refresh: true })
+            body: JSON.stringify({ refresh2: true })
         });
         await fetch(`${baseDbUrl}/basketData/${selectedUserId}.json`, { method: 'DELETE' });
         waitForData(selectedUserId);
@@ -277,9 +315,9 @@ async function startApp() {
     try {
         await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
             method: 'PATCH',
-            body: JSON.stringify({ refresh: true })
+            body: JSON.stringify({ refresh2: true })
         });
-    } catch(e) { console.error("Refresh hatası:", e); }
+    } catch(e) { console.error("refresh2 hatası:", e); }
 
     // Veri beklemeyi başlat
     waitForData(userId);
@@ -287,7 +325,8 @@ async function startApp() {
 
 async function fetchBasketItems(userId) {
     try {
-        const res = await fetch(`${baseDbUrl}/basketData/${userId}.json`);
+        // basketData yerine basketData2 yapıldı
+        const res = await fetch(`${baseDbUrl}/basketData2/${userId}.json`);
         const data = await res.json();
         return data || [];
     } catch (e) {
@@ -295,44 +334,87 @@ async function fetchBasketItems(userId) {
     }
 }
 
+// 2. Gruplandırma Fonksiyonu Eklendi
+function groupByBin(items) {
+    return items.reduce((groups, item) => {
+        const binName = item.bin || "Belirtilmemiş";
+        if (!groups[binName]) {
+            groups[binName] = [];
+        }
+        groups[binName].push(item);
+        return groups;
+    }, {});
+}
+
 function renderBasket(items) {
     document.getElementById("count").innerText = items.length + " ürün";
-    contentDiv.innerHTML = `<div class="container">${items.map(p => {
-        const safeDesc = p.description.replace(/'/g, "\\'");
-        const productJson = JSON.stringify(p).replace(/"/g, '&quot;');
-        
-        return `
-<div class="card" 
-     onclick="handleDoubleClick('${p.orderProductId}')"
-     onmousedown="startPress(event, ${productJson})" 
-     onmouseup="cancelPress()" 
-     onmouseleave="cancelPress()"
-     ontouchstart="startPress(event, ${productJson})" 
-     ontouchend="cancelPress()">
-     
-    <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/784/1080/")}" alt="" pointer-events: none;>
-    <div class="card-content">
-        <div class="brand">${p.brand}</div>
-        <div class="desc">${p.description}</div>
-        <div class="info">Beden: ${p.size} | Renk: ${p.color}</div>
-        <div class="info">${p.ean || '-'}  ${p.orderProductId || '-'}</div>
-        <div class="timer-container timer-data" data-startdate="${p.date}">
-            <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
-            <div class="timer-text"><span class="time-left-text">...</span></div>
-        </div>
-    </div>
-    <div class="button-group">
-        <div class="btn-row">
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')">STOK</button>
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')">HAREKET</button>
-        </div>
-        <div class="btn-row">
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')">BARKOD</button>
-            <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findSectionInfo('${p.orderProductId}')">SECTION</button>
-        </div>
-    </div>
-</div>`;
-    }).join('')}</div>`;
+    const groupedItems = groupByBin(items);
+    let htmlContent = "";
+
+    for (const binName in groupedItems) {
+        htmlContent += `
+            <div class="bin-wrapper">
+                <div class="bin-header" onclick="toggleBin(this)">
+                    <span>🧺 SEPET: ${binName} (${groupedItems[binName].length} Ürün)</span>
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="bin-content">
+                    <div class="container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px 0;">
+                        ${groupedItems[binName].map(p => {
+                            const safeDesc = p.description.replace(/'/g, "\\'");
+                            const productJson = JSON.stringify(p).replace(/"/g, '&quot;');
+                            
+                            return `
+                            <div class="card" 
+                                 onclick="handleDoubleClick('${p.orderProductId}')"
+                                 onmousedown="startPress(event, ${productJson})" 
+                                 onmouseup="cancelPress()" 
+                                 onmouseleave="cancelPress()"
+                                 ontouchstart="startPress(event, ${productJson})" 
+                                 ontouchend="cancelPress()">
+                                 
+                                <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/784/1080/")}" alt="" style="pointer-events: none;">
+                                <div class="card-content">
+                                    <div class="brand">${p.brand}</div>
+                                    <div class="desc">${p.description}</div>
+                                    <div class="info">Beden: ${p.size} | Renk: ${p.color}</div>
+                                    <div class="info">${p.ean || '-'} | ${p.orderProductId || '-'}</div>
+                                    <div class="timer-container timer-data" data-startdate="${p.date}">
+                                        <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+                                        <div class="timer-text"><span class="time-left-text">...</span></div>
+                                    </div>
+                                </div>
+                                <div class="button-group">
+                                    <div class="btn-row">
+                                        <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok Bilgisi Yükleniyor...')">STOK</button>
+                                        <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findMovementInfo('${p.orderProductId}')">HAREKET</button>
+                                    </div>
+                                    <div class="btn-row">
+                                        <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')">BARKOD</button>
+                                        <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Yükleniyor...'); findSectionInfo('${p.orderProductId}')">SECTION</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>`;
+    }
+    contentDiv.innerHTML = htmlContent;
+}
+function toggleBin(headerElement) {
+    const content = headerElement.nextElementSibling;
+    const chevron = headerElement.querySelector('.chevron');
+    
+    // Paneli aç/kapat
+    content.classList.toggle('collapsed');
+    
+    // Oku döndür
+    if (content.classList.contains('collapsed')) {
+        chevron.style.transform = 'rotate(-90deg)';
+    } else {
+        chevron.style.transform = 'rotate(0deg)';
+    }
 }
 
 function showEmptyBasket() {
