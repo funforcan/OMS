@@ -1,1089 +1,849 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FunForCan - E-Ticaret 3.0</title>
-<style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f9; user-select: none; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; overflow-x: hidden;}
-    
-    header { position: fixed; top: 0; left: 0; width: 100%; background: #690000; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; font-weight: bold; }
-    
-    /* Menü butonları varsayılan olarak pasif (tıklanamaz) */
-    header span { 
-        opacity: 0.4; 
-        cursor: not-allowed; 
-        transition: 0.3s;
-    }
-    
-    /* Giriş yapılınca eklenecek aktif sınıfı */
-    header span.enabled { 
-        opacity: 1; 
-        cursor: pointer; 
-    }
-#action-area {
-    transition: all 0.3s ease;
-}
-    header .active, #count { background: #000000; padding: 4px 10px; border-radius: 20px; font-size: 13px; opacity: 1; }
-    
-#content { 
-    padding: 80px 20px 20px; 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-}
-
-    /* Giriş Paneli */
-    .auth-container { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 3px 12px rgba(0,0,0,0.15); width: 320px; text-align: center; }
-    .auth-container h2 { margin-bottom: 20px; color: #111827; font-size: 20px; }
-    
-    .expandable-panel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; }
-    .expandable-panel.open { max-height: 300px; margin-top: 15px; }
-
-    input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
-    
-    .btn-main { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; }
-    .login-toggle { background: #000000; }
-    .register-toggle { background: #10b981; }
-    .action-btn { background: #111827; margin-top: 10px; }
-
-    #error { color: #dc2626; font-size: 13px; margin-top: 10px; min-height: 18px; }
-
-    /* Çıkış Yap Butonu */
-    #logout-area { width: 100%; padding: 20px; display: none; justify-content: center; }
-    .logout-btn { background: #640000; color: white; border: none; padding: 12px 40px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-
-    .hidden { display: none !important; }
-/* Switch (Toggle) Buton Tasarımı */
-.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
-.slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: #10b981; }
-input:checked + .slider:before { transform: translateX(20px); }
-
-/* Ana Sistem Yönetimi Paneli */
-.admin-main-card {
-    width: 100%; /* %96'dan %98'e çıkarıldı, kenar boşlukları azaltıldı */
-    max-width: 1500px; /* Maksimum genişlik artırıldı (veya tamamen kaldırabilirsin) */
-    background: #640000; 
-    color: white;
-    border-radius: 12px;
-    margin: 10px auto; /* Üst-alt boşluk biraz azaltıldı */
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-#admin-main-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 0 10px; /* Kenarlara yapışmaması için çok hafif iç boşluk */
-    box-sizing: border-box;
-}
-.server-table th, .server-table td {
-    padding: 12px 15px; /* Hücre iç boşlukları artırılarak daha dolgun görünmesi sağlandı */
-}
-.admin-main-header {
-    padding: 15px 20px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 18px;
-    font-weight: bold;
-}
-#admin-users-list, #admin-server-list {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.admin-main-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.5s ease-in-out;
-    background: #940000; /* İçerik açıldığında yine açık renk olsun */
-    padding: 0 10px;
-}
-
-.admin-main-content.open {
-    max-height: 2000px; /* İçerik çoksa geniş tutuyoruz */
-    padding: 15px 10px;
-}
-
-/* Ana Kart Yapısı */
-/* User kartlarının da tam genişlikte olması için */
-.user-admin-card { 
-    background: white; 
-    border-radius: 8px; 
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-    margin-bottom: 8px; 
-    width: 100%; /* İçerideki kartlar da tam genişlik */
-    max-width: 100%; 
-    border: 1px solid #e5e7eb;
-}
-
-/* Başlık Alanı (Hizalanmış) */
-.user-card-header { 
-    padding: 12px 16px; 
-    cursor: pointer; 
-    display: flex; 
-    align-items: center;
-    background: #f9fafb;
-    transition: background 0.2s;
-}
-.user-card-header:hover { background: #f3f4f6; }
-
-/* Ok İkonu En Sola */
-.chevron { 
-    margin-right: 12px; 
-    font-size: 12px; 
-    transition: transform 0.3s;
-    color: #6b7280;
-}
-.open-icon { transform: rotate(90deg); }
-
-.user-info { font-weight: 600; color: #111827; flex: 1; }
-.user-id-tag { font-size: 11px; color: #9ca3af; font-weight: normal; margin-left: 8px; }
-
-/* Tablo ve İçerik */
-.user-card-content { 
-    max-height: 0; 
-    overflow: hidden; 
-    transition: max-height 0.3s ease-out; 
-}
-.user-card-content.open { 
-    max-height: 1000px; 
-    border-top: 1px solid #e5e7eb; 
-}
-
-.server-table { width: 100%; border-collapse: collapse; }
-.server-table th { 
-    background: #f3f4f6; 
-    padding: 10px; 
-    font-size: 12px; 
-    text-transform: uppercase; 
-    color: #4b5563;
-    border-bottom: 1px solid #e5e7eb;
-}
-.server-table td { 
-    padding: 12px 10px; 
-    text-align: center; 
-    border-bottom: 1px solid #f3f4f6; 
-    font-size: 14px;
-}
-/* Sunucu Kartı Özel Stilleri */
-.status-active { background: #dcfce7 !important; border-left: 5px solid #10b981; }
-.status-passive { background: #fee2e2 !important; border-left: 5px solid #ef4444; }
-
-.server-card-header {
-    padding: 10px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-}
-
-.status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 8px;
-}
-.admin-action-row {
-    width: 100%;
-    padding: 10px 0; /* Kenarlara tam yaslanması için sağ-sol padding'i sıfırladık */
-    display: flex;
-    justify-content: center; /* Butonu ortalar */
-}
-
-.btn-reset-all {
-    background: #000000;
-    color: white;
-    border: none;
-    padding: 15px 10px; /* Daha dolgun görünmesi için padding artırıldı */
-    border-radius: 8px; /* Panel köşeleriyle uyumlu olsun diye biraz artırıldı */
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 15px; /* Yazı boyutu biraz büyütüldü */
-    transition: all 0.2s;
-    width: 100%; /* İçinde bulunduğu alan boyunca genişler */
-    box-sizing: border-box; /* Padding'in genişliği bozmasını engeller */
-}
-
-.btn-reset-all:hover {
-    background: #dc2626;
-    transform: scale(0.99); /* Tıklama hissi için hafif küçülme efekti */
-}
-/* Loader Karartma Arka Planı */
-#loader-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #f4f6f9; /* Sayfa arka plan rengiyle aynı ve tam opak */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999; /* En üstte durması için */
-    opacity: 1;
-    transition: opacity 0.4s ease;
-}
-
-.loader {
-    width: 50px;
-    aspect-ratio: 1;
-    --_c: no-repeat radial-gradient(farthest-side, #690000 92%, #0000);
-    background: 
-        var(--_c) top,
-        var(--_c) left,
-        var(--_c) right,
-        var(--_c) bottom;
-    background-size: 12px 12px;
-    animation: l7 1s infinite;
-}
-
-@keyframes l7 { to { transform: rotate(.5turn) } }
-
-/* Loader gizlendiğinde kullanılacak sınıf */
-.loader-hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-/* Sayfa ilk açıldığında içeriği tamamen gizliyoruz */
-#content, #logout-area, #main-nav {
-    visibility: hidden;
-    opacity: 0;
-}
-
-/* Loader bittiğinde bu sınıfı ekleyerek içeriği göstereceğiz */
-.page-ready #content, 
-.page-ready #logout-area, 
-.page-ready #main-nav {
-    visibility: visible;
-    opacity: 1;
-    transition: opacity 0.5s ease-in;
-}
-
-</style>
 </head>
 <body>
-<div id="loader-overlay">
-    <div class="loader"></div>
-</div>
-<header id="main-nav">
-    <span class="active">Anasayfa</span>
-    <span id="nav-cart" onclick="navTo('index.html')">Sepet</span>
-	    <span id="nav-cart" onclick="navTo('index2.html')">Çoklu</span>
-    <span id="nav-msg" onclick="navTo('mesaj.html')">Mesajlar</span>
-</header>
-<div id="content">
-    <div id="auth-box" class="auth-container">
-        <h2>E-Ticaret 3.0</h2>
-        <button id="login-nav-btn" class="btn-main login-toggle" onclick="togglePanel('login')">Giriş Yap</button>
-        <p style="margin-top:10px; text-align: center; font-size:12px; color:#6b7280;">Hesap oluşturmak için sistem yöneticisine başvurunuz!</p>
-
-        <div id="form-panel" class="expandable-panel">
-            <input type="text" id="username" placeholder="Sicil Numarası" />
-            <input type="password" id="password" placeholder="Şifre" />
-            <button id="submit-btn" class="btn-main action-btn" onclick="handleAuth()">Gönder</button>
-        </div>
-        <div id="error"></div>
-    </div>
-<div id="content">
-    <div id="welcome-msg" class="hidden" style="text-align: center;">
-        <h3>Hoş geldin, <span id="user-display" style="color:#940000"></span>!</h3>
-    </div>
-
-<div id="admin-main-container" class="hidden">
-    
-    <div class="admin-main-card">
-        <div class="admin-main-header" onclick="toggleMainAdminPanel()">
-            <span>🖥️ Bot Yönetimi</span>
-            <span id="main-chevron">▼</span>
-        </div>
-        <div id="admin-main-content" class="admin-main-content">
-            <div id="admin-users-list"></div>
-        </div>
-    </div>
-
-    <div class="admin-main-card">
-        <div class="admin-main-header" onclick="toggleServerPanel()">
-            <span>🖥️ Sunucu Yönetimi</span>
-            <span id="server-main-chevron">▼</span>
-        </div>
-        <div id="server-main-content" class="admin-main-content">
-            <div class="admin-action-row">
-                <button class="btn-reset-all" onclick="resetAllServers()">Sunucuları Yenile !</button>
-				<button class="btn-reset-all" onclick="clearAllMessages()">Tüm Mesajları Sil</button>
-				<button class="btn-reset-all" onclick="clearAllLogs()">Tüm Logları Sil</button>
+<div id="loader-overlay"><div class="loader"></div></div>
+<div id="top-area">
+    <div id="content">
+        <div class="tab-page active-page">
+            <div id="auth-box" class="auth-container">
+                <h2>E-Ticaret Asistan</h2>
+                <div id="form-panel" class="expandable-panel">
+                    <input type="text" id="username" placeholder="Sicil Numarası" />
+                    <input type="password" id="password" placeholder="Şifre" />
+                    <p style="margin-top:10px; text-align: center; font-size:12px; color:#6b7280;">Hesaba giriş yapmak için sicil ve şifrenizi kullanın.</p>
+                    <button id="login-nav-btn" class="btn-main login-toggle" onclick="handleAuth()">Giriş Yap</button>
+                </div>
+                <div id="error"></div>
             </div>
-            <div id="admin-server-list"></div>
+            <div id="form-panel-2" class="auth-container hidden"> 
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                     <h3 style="color:#ffffff; text-align:left; margin:0; font-size: 14px;">
+                        <span style="opacity: 0.7; font-size: 11px;">KULLANICI</span><br>
+                        <span id="user-display" style="color:#00ABCC"></span>
+                     </h3>
+                    <button class="btn-main login-toggle" style="background:#00ABCC; border:none; margin:0; padding: 8px 15px; width: auto; color: #1d1d27; font-weight: bold;" onclick="logout()">Çıkış Yap</button>
+                </div>
+            </div>
+            <div id="action-area" class="hidden"></div>
+			<div id="admin-master-card" class="hidden"></div>
+			<div id="admin-logs-card" class="hidden"></div>
+        </div>
+
+        <div class="tab-page">
+            <div class="card">
+                <div class="bg"></div><div class="blob"></div>
+                <div id="admin-users-list" style="position: relative; z-index: 3; width: 100%;"></div>
+            </div>
+            <div class="log-card" style="margin-top: 20px;">
+                <div class="bg"></div>
+                <div class="user-card-header" style="position: relative; z-index: 11; width: 100%;">
+                    <div class="user-info" style="padding: 10px; text-align: left;"><span style="color: #00ABCC;">●</span> Sistem Hareketleri</div>
+                </div>
+                <div id="logs-list"><p style="text-align:center; padding:20px; color:#666;">Loglar yükleniyor...</p></div>
+            </div>
+        </div> 
+
+        <div class="tab-page sepet-sayfasi"> 
+            <div id="basket-header" class="basket-header-bar">
+                <span class="header-item active-tab" id="tab-tekli" onclick="switchBasketMode('tekli')">TEKLİ</span>
+                <span class="header-item" id="tab-coklu" onclick="switchBasketMode('coklu')">ÇOKLU</span>
+                <span class="header-item right" id="basket-count-wrap" onclick="handleBasketRefresh()" style="cursor: pointer !important; pointer-events: auto !important; position: relative; z-index: 9999;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>
+                    </svg>
+                    ADET: <span id="basket-count">0</span>
+                </span>
+            </div>
+            <div id="basket-content">
+                <div id="container-tekli"></div>
+                <div id="container-coklu" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="tab-page">
+            <h2>BOYNER NOW</h2>
+            <h3>Geliştirme aşamasındadır...</h3>		
+        </div>
+
+        <div class="tab-page" id="social-page" style="padding: 0; background: #f4f6f9; flex-direction: column; height: 100vh;">
+            <div id="chat-container" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px;">
+                <div class="empty-state" style="text-align: center; color: #9ca3af; margin-top: 50px;">Mesajlar yükleniyor...</div>
+            </div>
+            <div id="input-area" style="position: fixed; bottom: 50px; left: 0; right: 0; background: #1d1d27; padding: 10px; display: flex; gap: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1001;">
+                <input type="text" id="msgInput" placeholder="Mesajınızı yazın..." style="flex: 1; padding: 0 15px; height: 45px; border-radius: 25px; border: 1px solid #ddd; outline: none; font-size: 16px;" onkeypress="if(event.key==='Enter') sendMessage()">
+                <button id="sendBtn" onclick="sendMessage()" style="background: #00ABCC; color: white; border: none; width: 80px; height: 45px; border-radius: 25px; font-weight: bold; cursor: pointer;">Gönder</button>
+            </div>
+            <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+        </div>
+
+        <div id="mainModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 99999; padding: 20px;" onclick="if(event.target===this) closeModal()">
+            <div style="background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center; color: #333; position: relative;">
+                <h2 id="modalTitle" style="font-size: 16px; margin-bottom:15px; border-bottom:1px solid #ddd; padding-bottom:10px;"></h2>
+                <div id="modalBody"></div>
+                <button onclick="closeModal()" style="margin-top: 20px; padding: 12px; background: #00ABCC; color: white; border: none; border-radius: 6px; width: 100%; font-weight: bold;">Kapat</button>
+            </div>
         </div>
     </div>
-    <div class="admin-main-card">
-    <div class="admin-main-header" onclick="toggleLogsPanel()">
-        <span>📜 Kullanıcı Logları</span>
-        <span id="logs-main-chevron">▼</span>
-    </div>
-    <div id="logs-main-content" class="admin-main-content">
-        <div id="logs-list" style="background: #fff; color: #333; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
-            Henüz ilgili log bulunamadı...
-        </div>
-    </div>
 </div>
-<div id="admin-master-card" class="admin-main-card hidden">
-    <div class="admin-main-header" onclick="toggleMasterPanel()">
-        <span>🛠️ Sunucu Logları</span>
-        <span id="master-chevron">▼</span>
-    </div>
-    <div id="master-main-content" class="admin-main-content">
-        <div id="master-list" style="background: #111; color: #0f0; padding: 10px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 11px; max-height: 400px; overflow-y: auto; border: 1px solid #333;">
-            Sistem bekleniyor...
-        </div>
-    </div>
-</div>
-</div>
-</div>
-</div>
-<div id="logout-area" style="flex-direction: column; align-items: center; gap: 10px;">
-    <div id="action-area" class="hidden" style="text-align: center; padding: 15px; width: 100%; max-width: 320px;">
-    </div>
-    
-    <button class="logout-btn" onclick="logout()">Çıkış Yap!</button>
-</div>
-<audio id="bing-sound" preload="auto">
-    <source src="pop.wav" type="audio/wav">
-</audio>
+
+<menu class="menu">
+    <button class="menu__item active" data-target="home" style="--bgColorItem: #00ABCC;">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    </button>
+    <button class="menu__item" data-target="bot" style="--bgColorItem: #00ABCC;">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 6V2H8"/><path d="M15 11v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M9 11v2"/></svg>
+    </button>
+    <button class="menu__item" data-target="sepet" style="--bgColorItem: #00ABCC;">
+      <svg class="icon" viewBox="0 0 24 24"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>
+    </button>
+    <button class="menu__item" data-target="now" style="--bgColorItem: #00ABCC;"> 
+      <svg class="icon" viewBox="0 0 24 24"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+    </button>
+    <button class="menu__item" data-target="social" style="--bgColorItem:#00ABCC;">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/></svg>
+    </button>
+    <div class="menu__border"></div>
+  </menu>
+  <div class="svg-container">
+    <svg viewBox="0 0 202.9 45.5"><clipPath id="menu" clipPathUnits="objectBoundingBox" transform="scale(0.0049285362247413 0.021978021978022)"><path d="M6.7,45.5c5.7,0.1,14.1-0.4,23.3-4c5.7-2.3,9.9-5,18.1-10.5c10.7-7.1,11.8-9.2,20.6-14.3c5-2.9,9.2-5.2,15.2-7c7.1-2.1,13.3-2.3,17.6-2.1c4.2-0.2,10.5,0.1,17.6,2.1c6.1,1.8,10.2,4.1,15.2,7c8.8,5,9.9,7.1,20.6,14.3c8.3,5.5,12.4,8.2,18.1,10.5c9.2,3.6,17.6,4.2,23.3,4H6.7z"/></clipPath></svg>
+  </div>
+<audio id="bing-sound" preload="auto"><source src="pop.wav" type="audio/wav"></audio>
+
+<script src="js/js.js"></script>
 <script>
 let isAdmin = false;
-const firebaseUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app/UserList";
-let currentMode = '';
 const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
-let countdownInterval;
+let basketLoaded = false, basketLoaded2 = false;
+let currentBasketTab = 'tekli';
+let lastMessageCount = 0, socialInterval, lastProcessedLog = null, lastClick = 0;
+let isAdminPanelCollapsed = false; // Panel durumunu hafızada tutar
+let isAdminLogsCollapsed = true; 
+let isLogUpdatePaused = false; // Log akışını durdurup başlatmak için
+
 window.onload = async () => {
-    // 1. Önce oturum ve zamanlayıcı kontrollerini yap
-    checkSession();
-    checkTimer();
-    
-    // 2. Loader'ı kapat ve içeriği göster
     const loader = document.getElementById("loader-overlay");
-    
-    setTimeout(() => {
-        // Body'ye hazır sınıfını ekle (İçerik CSS ile görünür olacak)
-        document.body.classList.add("page-ready");
+    try {
+        const user = localStorage.getItem("user");
+        if (user) showLoggedInState(user);
         
-        // Loader'ı yumuşakça gizle
-        loader.style.opacity = "0";
-        
-        setTimeout(() => {
-            loader.style.display = "none";
-        }, 400);
-    }, 800); // 800ms bekleme süresi (Göz yormayan bir geçiş için)
+        if (user) {
+            renderUserPanel();
+            renderLogs();
+            setInterval(() => {
+    if (localStorage.getItem("user")) { 
+        renderUserPanel(); 
+        renderLogs(); 
+        if(isAdmin) {
+    renderAdminPanel();
+    renderAdminLogsPanel(); // Bunu ekle
+}
+    }
+}, 3000);
+        }
+    } catch (err) { console.error(err); } 
+    finally {
+        if (loader) {
+            loader.style.opacity = "0";
+            setTimeout(() => { loader.style.display = "none"; document.body.classList.add("page-ready"); }, 400);
+        }
+    }
 };
-// Paneli Aç/Kapat
-async function clearAllMessages() {
-    // Sadece admin (197127) bu işlemi yapabilsin (güvenlik önlemi)
-    const currentUser = localStorage.getItem("user");
-    if (currentUser !== "197127") {
-        alert("Bu işlem için yetkiniz yok!");
-        return;
-    }
 
-    if (!confirm("TÜM mesaj geçmişini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) return;
+document.addEventListener("DOMContentLoaded", () => {
+    const passwordInput = document.getElementById("password");
+    if (passwordInput) passwordInput.addEventListener("keypress", e => { if (e.key === "Enter") handleAuth(); });
+});
 
-    try {
-        const res = await fetch(`${baseDbUrl}/messages.json`, {
-            method: 'DELETE'
-        });
-
-        if (res.ok) {
-            alert("Tüm mesajlar başarıyla temizlendi.");
-        } else {
-            throw new Error("Silme işlemi başarısız.");
-        }
-    } catch (err) {
-        console.error("Mesaj silme hatası:", err);
-        alert("Mesajlar silinirken bir hata oluştu!");
-    }
-}
-function toggleServerPanel() {
-    const content = document.getElementById("server-main-content");
-    const chevron = document.getElementById("server-main-chevron");
-    const isOpen = content.classList.toggle("open");
-    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
-}
-async function resetAllServers() {
-    if (!confirm("Tüm sunucuların çalışma ve bağlantı durumlarını pasife almak istediğinize emin misiniz?")) return;
-
-    try {
-        // 1. Mevcut sunucu listesini çek
-        const res = await fetch(`${baseDbUrl}/ServerList.json`);
-        const serverData = await res.json();
-        
-        if (!serverData) return;
-
-        const updates = {};
-        // 2. Her cihaz için güncellenecek alanları belirle
-        for (let deviceId in serverData) {
-            updates[`${deviceId}/Active`] = false;
-            updates[`${deviceId}/Server`] = false;
-            updates[`${deviceId}/Status`] = false;
-        }
-
-        // 3. Toplu güncelleme gönder (PATCH)
-        const patchRes = await fetch(`${baseDbUrl}/ServerList.json`, {
-            method: 'PATCH',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updates)
-        });
-
-        if (patchRes.ok) {
-            alert("Tüm sistemler başarıyla durduruldu.");
-            renderServerManagement(); // Listeyi yenile
-        } else {
-            throw new Error("Güncelleme başarısız");
-        }
-    } catch (err) {
-        console.error("Reset hatası:", err);
-        alert("İşlem sırasında bir hata oluştu!");
-    }
-}
-// Sunucu Yönetimini Başlat (Veritabanından Çeker)
-async function renderServerManagement() {
-    try {
-        const res = await fetch(`${baseDbUrl}/ServerList.json`);
-        const serverData = await res.json();
-        const container = document.getElementById("admin-server-list");
-        if (!container) return;
-        container.innerHTML = "";
-
-for (let deviceId in serverData) {
-    const server = serverData[deviceId];
-    const isOnline = server.Status === true; 
-    const serverName = deviceId.replace("Device", "Server ");
-
-    const card = document.createElement("div");
-    card.className = `user-admin-card ${isOnline ? 'status-active' : 'status-passive'}`;
-
-    card.innerHTML = `
-        <div class="server-card-header" onclick="toggleSubPanel('${deviceId}')">
-            <div>
-                <span class="status-dot" style="background:${isOnline ? '#10b981' : '#ef4444'}"></span>
-                <b style="color:#111827">${serverName}</b>
-            </div>
-            <span id="chev-${deviceId}">▶</span>
-        </div>
-        <div id="content-${deviceId}" class="user-card-content">
-            <table class="server-table">
-                <tbody>
-                    <tr>
-                        <td style="text-align:left; padding-left:15px; color: black; font-weight: bold;">SUNUCU DURUMU : </td>
-                        <td>
-                            <label class="switch">
-                                <input type="checkbox" ${server.Server ? "checked" : ""} 
-                                       onchange="updateServerConfig('${deviceId}', 'Server', this.checked)">
-                                <span class="slider"></span>
-                            </label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="text-align:left; padding-left:15px; color: black; font-weight: bold;">SUNUCU ERİŞİMİ : </td>
-                        <td>
-                            <label class="switch">
-                                <input type="checkbox" ${server.Active ? "checked" : ""} 
-                                       onchange="updateServerConfig('${deviceId}', 'Active', this.checked)">
-                                <span class="slider"></span>
-                            </label>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    `;
-    container.appendChild(card);
-}
-    } catch (err) {
-        console.error("Sunucu listesi hatası:", err);
-    }
-}
-
-// Alt panelleri tek tek açma
-function toggleSubPanel(id) {
-    const content = document.getElementById(`content-${id}`);
-    const chev = document.getElementById(`chev-${id}`);
-    const isOpen = content.classList.toggle("open");
-    chev.style.transform = isOpen ? "rotate(90deg)" : "rotate(0deg)";
-}
-
-// Sunucu ayarlarını güncelleme (Active veya Server bool değerleri için)
-async function updateServerConfig(device, field, value) {
-    try {
-        await fetch(`${baseDbUrl}/ServerList/${device}.json`, {
-            method: 'PATCH',
-            body: JSON.stringify({ [field]: value })
-        });
-    } catch (err) {
-        alert("Güncelleme başarısız!");
-    }
-}
-function toggleMainAdminPanel() {
-    const content = document.getElementById("admin-main-content");
-    const chevron = document.getElementById("main-chevron");
-    const isOpen = content.classList.toggle("open");
+async function clearBasketData(type) {
+    const userId = localStorage.getItem("user");
+    if (!userId) return;
+    const dbPath = type === 'tekli' ? 'basketData' : 'basketData2';
+    const refreshKey = type === 'tekli' ? 'refresh' : 'refresh2';
     
-    chevron.innerText = isOpen ? "▲" : "▼";
-    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
-}
-function checkSession() {
-    const user = localStorage.getItem("user");
-    if (user) {
-        showLoggedInState(user);
-    }
+    try {
+        await fetch(`${baseDbUrl}/${dbPath}/${userId}.json`, { method: 'DELETE' });
+        await fetch(`${baseDbUrl}/UserList/${userId}.json`, { method: 'PATCH', body: JSON.stringify({ [refreshKey]: true }) });
+    } catch (err) { console.error(err); }
 }
 
-// Navigasyon fonksiyonu
-function navTo(page) {
-    if (localStorage.getItem("user")) {
-        window.location.href = page;
-    } else {
-        document.getElementById("error").innerText = "Lütfen önce giriş yapın!";
-    }
+async function handleBasketRefresh() {
+    const countSpan = document.getElementById("basket-count");
+    const container = currentBasketTab === 'tekli' ? document.getElementById('container-tekli') : document.getElementById('container-coklu');
+    const dbPath = currentBasketTab === 'tekli' ? 'basketData' : 'basketData2';
+
+    countSpan.innerText = "...";
+    countSpan.style.color = "#00ABCC";
+    container.innerHTML = `<p style="text-align:center; color:#00ABCC; padding:20px;">Yeni veriler hazırlanıyor...</p>`;
+
+    if (currentBasketTab === 'tekli') basketLoaded = false; else basketLoaded2 = false;
+
+    await clearBasketData(currentBasketTab);
+    pollForData(dbPath, container, val => { if(currentBasketTab === 'tekli') basketLoaded = val; else basketLoaded2 = val; });
 }
 
-function togglePanel(mode) {
-    const panel = document.getElementById("form-panel");
-    const submitBtn = document.getElementById("submit-btn");
-    
-    if (currentMode === mode && panel.classList.contains('open')) {
-        panel.classList.remove('open');
-        currentMode = '';
-    } else {
-        currentMode = mode;
-        submitBtn.innerText = mode === 'login' ? 'Giriş Yap' : 'Kaydı Tamamla';
-        panel.classList.add('open');
-        document.getElementById("error").innerText = "";
-    }
+function pollForData(dbPath, container, setLoadedFlag) {
+    const userId = localStorage.getItem("user");
+    let attempts = 0;
+    const icon = document.querySelector("#basket-count-wrap svg");
+    if (icon) icon.classList.add("fa-spin-custom");
+
+    const interval = setInterval(async () => {
+        attempts++;
+        try {
+            const res = await fetch(`${baseDbUrl}/${dbPath}/${userId}.json`);
+            const data = await res.json();
+            if (data && Object.keys(data).length > 0) {
+                clearInterval(interval);
+                if (icon) icon.classList.remove("fa-spin-custom");
+                setLoadedFlag(false);
+                dbPath === 'basketData' ? await loadBasketData() : await loadBasketData2();
+            }
+        } catch (e) { console.error(e); }
+
+        if (attempts >= 20) {
+            clearInterval(interval);
+            if (icon) icon.classList.remove("fa-spin-custom");
+            container.innerHTML = `<p style="text-align:center; color:#6b7280;">Zaman aşımı: Veri gelmedi.</p>`;
+            document.getElementById("basket-count").innerText = "0";
+        }
+    }, 1000);
 }
 
 async function handleAuth() {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
     const errorDiv = document.getElementById("error");
+    const loginBtn = document.getElementById("login-nav-btn");
 
-    if (!username || !password) {
-        errorDiv.innerText = "Tüm alanları doldurun!";
-        return;
-    }
+    errorDiv.innerText = "";
+    if (!username || !password) { errorDiv.innerText = "Lütfen sicil numaranızı ve şifrenizi girin!"; return; }
+
+    loginBtn.disabled = true; loginBtn.innerText = "Giriş yapılıyor...";
 
     try {
-if (currentMode === 'login') {
-    const res = await fetch(`${firebaseUrl}/${username}.json`);
-    const userData = await res.json(); // dbPassword yerine userData diyelim
-
-    if (userData === null) {
-        errorDiv.innerText = "Kullanıcı bulunamadı!";
-    } else if (userData.password !== password) { // .password ile kontrol et
-        errorDiv.innerText = "Şifre hatalı!";
-    } else {
-        loginSuccess(username);
-    }
-} else if (currentMode === 'register') {
-    const checkRes = await fetch(`${firebaseUrl}/${username}.json`);
-    const exists = await checkRes.json();
-
-    if (exists !== null) {
-        errorDiv.innerText = "Bu sicil zaten kayıtlı!";
-        return;
-    }
-
-    const regRes = await fetch(`${firebaseUrl}/${username}.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            password: password,
-            userColor: "#2563eb", 
-            userTitle: username,  
-            userMessageColor: "#111827"
-        })
-    }); // <--- BURADAKİ PARANTEZLERİ KAPATMAYI UNUTMA
-
-    if (regRes.ok) loginSuccess(username);
-}
-    } catch (err) {
-        errorDiv.innerText = "Bağlantı hatası!";
-    }
+        const res = await fetch(`${baseDbUrl}/UserList/${username}.json`);
+        const userData = await res.json();
+        if (!userData) errorDiv.innerText = "Kullanıcı bulunamadı!";
+        else if (userData.password !== password) errorDiv.innerText = "Girdiğiniz şifre hatalı!";
+        else {
+            localStorage.setItem("user", username);
+            location.reload();
+        }
+    } catch (err) { errorDiv.innerText = "Bağlantı hatası!"; } 
+    finally { loginBtn.disabled = false; loginBtn.innerText = "Giriş Yap"; }
 }
 
-function loginSuccess(username) {
-    localStorage.setItem("user", username);
-    showLoggedInState(username);
-}
-
-// Giriş başarısını kontrol eden fonksiyonu güncelle
-// Giriş durumunu gösteren güncellenmiş fonksiyon
 async function showLoggedInState(username) {
     isAdmin = (username === "197127");
-    const userDisplay = document.getElementById("user-display");
-    
-    try {
-        const res = await fetch(`${firebaseUrl}/${username}.json`);
-        const userData = await res.json();
-        userDisplay.innerText = (userData && userData.userTitle) ? userData.userTitle.slice(7) : username;
-    } catch (err) {
-        userDisplay.innerText = username;
-    }
-
-    // Arayüz görünürlüğü
-    document.getElementById("action-area").classList.remove("hidden");
-    document.getElementById("auth-box").classList.add("hidden");
-    document.getElementById("welcome-msg").classList.remove("hidden");
-    document.getElementById("logout-area").style.display = "flex";
-    document.querySelectorAll("#main-nav span:not(#count)").forEach(span => span.classList.add("enabled"));
-
-    const adminContainer = document.getElementById("admin-main-container");
-    if(adminContainer) {
-        adminContainer.classList.remove("hidden");
-        if (isAdmin) {
+if (isAdmin) {
     document.getElementById("admin-master-card").classList.remove("hidden");
-    renderMasterLogs(); // İlk yüklemede çek
-}
-        // Admin değilse Sunucu Yönetimi kartını gizle
-        const serverCard = document.querySelectorAll('.admin-main-card')[1];
-        if (!isAdmin && serverCard) serverCard.style.display = "none";
-
-        // ANLIK DİNLEMEYİ BAŞLAT
-        startRealtimeListeners();
-    }
-}
-
-// Veritabanındaki değişiklikleri anlık takip eden fonksiyon
-function startRealtimeListeners() {
-    const paths = ["UserList", "ServerList"];
-    
-    paths.forEach(path => {
-        const eventSource = new EventSource(`${baseDbUrl}/${path}.json`);
-        
-eventSource.addEventListener('put', (e) => {
+    document.getElementById("admin-logs-card").classList.remove("hidden"); // Bunu ekle
     renderAdminPanel();
-    if (isAdmin) {
-        renderServerManagement();
-        renderMasterLogs(); // Admin panelini canlı güncelle
-    }
-    renderLogs();
-});
-
-        eventSource.onerror = (err) => {
-            eventSource.close();
-            setTimeout(startRealtimeListeners, 5000);
-        };
-    });
+    renderAdminLogsPanel(); // Bunu ekle
 }
-
-async function renderAdminPanel() {
     try {
-        const currentLoggedUser = localStorage.getItem("user");
-        const [usersRes, serversRes] = await Promise.all([
-            fetch(`${baseDbUrl}/UserList.json`),
-            fetch(`${baseDbUrl}/ServerList.json`)
-        ]);
-        
-        const allUsers = await usersRes.json();
-        const serverData = await serversRes.json();
-        const container = document.getElementById("admin-users-list");
-        if(!container) return;
+        const res = await fetch(`${baseDbUrl}/UserList/${username}.json`);
+        const userData = await res.json();
+        document.getElementById("user-display").innerText = (userData && userData.userTitle) ? userData.userTitle : username;
+    } catch (err) { document.getElementById("user-display").innerText = username; }
 
-        const openPanels = Array.from(document.querySelectorAll('.user-card-content.open')).map(el => el.id);
-        container.innerHTML = ""; 
-
-        for (let userId in allUsers) {
-            if (!isAdmin && userId !== currentLoggedUser) continue;
-
-            const user = allUsers[userId];
-            const userTitle = user.userTitle || userId;
-            const contentId = `user-content-${userId}`;
-
-            const card = document.createElement("div");
-            card.className = "user-admin-card";
-            const isInitiallyOpen = openPanels.includes(contentId);
-
-            card.innerHTML = `
-                <div class="user-card-header" onclick="toggleUserPanel('${userId}')">
-                    <span class="chevron ${isInitiallyOpen ? 'open-icon' : ''}" id="chev-user-${userId}">▶</span>
-                    <div class="user-info">
-                        ${userTitle} <span class="user-id-tag">#${userId}</span>
-                    </div>
-                </div>
-                <div id="${contentId}" class="user-card-content ${isInitiallyOpen ? 'open' : ''}">
-                    <table class="server-table">
-                        <thead>
-                            <tr>
-                                <th style="text-align:left; padding-left:15px;">Sunucu</th>
-                                <th>Tekli</th>
-                                <th>Çoklu</th>
-                            </tr>
-                        </thead>
-                        <tbody id="body-${userId}"></tbody>
-                    </table>
-                </div>
-				<p style="margin-top:10px; text-align: center; font-size:12px; color:#6b7280;">Sunucuların erişime açılması ve kapatılması sistem sağlığı için Admin kontrolündedir.</p>
-            `;
-            container.appendChild(card);
-
-            const tbody = document.getElementById(`body-${userId}`);
-            for (let deviceId in serverData) {
-                const device = serverData[deviceId];
-                const tekKey = `${userId}_tek`;
-                const cokKey = `${userId}_cok`;
-                
-                // --- YENİ MANTIK ---
-                // canUse: Admin ise her zaman true, değilse Active verisine bağlı
-                const canUse = isAdmin || (device.Active === true);
-                
-                // isOnline: Sadece görsel simge için Status verisine bağlı
-                const isOnline = (device.Status === true); 
-
-                const tr = document.createElement("tr");
-                // Eğer Active false ise ve admin değilsek satırı soluklaştır
-                if(!canUse) tr.style.opacity = "0.4";
-
-                tr.innerHTML = `
-                    <td style="text-align:left; padding-left:15px; color:#374151; font-weight:500;">
-                        <span style="color: ${isOnline ? '#10b981' : '#ef4444'}; margin-right: 5px;">
-                            ${isOnline ? '✔' : '✖'}
-                        </span> 
-                        ${deviceId.replace("Device", "Server ")}
-                    </td>
-                    <td>
-                        <label class="switch">
-                            <input type="checkbox" 
-                                   ${(device.UserList && device.UserList[tekKey]) ? "checked" : ""} 
-                                   ${!canUse ? "disabled" : ""}
-                                   onchange="updateServerStatus('${deviceId}', '${tekKey}', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                    </td>
-                    <td>
-                        <label class="switch">
-                            <input type="checkbox" 
-                                   ${(device.UserList && device.UserList[cokKey]) ? "checked" : ""} 
-                                   ${!canUse ? "disabled" : ""}
-                                   onchange="updateServerStatus('${deviceId}', '${cokKey}', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            }
-        }
-    } catch (err) { console.error("Panel yükleme hatası:", err); }
-}
-function toggleUserPanel(userId) {
-    const content = document.getElementById(`user-content-${userId}`);
-    const chev = document.getElementById(`chev-user-${userId}`);
-    if(content) {
-        const isOpen = content.classList.toggle("open");
-        if(chev) chev.style.transform = isOpen ? "rotate(90deg)" : "rotate(0deg)";
-    }
-}
-// Tek bir global update fonksiyonu yeterlidir
-async function updateServerStatus(device, key, value) {
-    try {
-        await fetch(`${baseDbUrl}/ServerList/${device}/UserList.json`, {
-            method: 'PATCH',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ [key]: value })
-        });
-    } catch (err) {
-        console.error("Güncelleme hatası:", err);
-        alert("Veritabanı bağlantı hatası!");
-    }
+    document.getElementById("auth-box")?.classList.add("hidden");
+    document.getElementById("form-panel-2")?.classList.remove("hidden");
+    document.getElementById("action-area")?.classList.remove("hidden");
 }
 
-function logout() {
-    localStorage.removeItem("user");
-    location.reload();
-}
-async function handleResetAction() {
-    const userId = localStorage.getItem("user");
-    if (!userId) return;
+function logout() { localStorage.removeItem("user"); location.reload(); }
 
-    const btn = document.getElementById("reset-btn");
-    
-    try {
-        // 1. basketData içindeki kullanıcıya ait veriyi sil (DELETE)
-        await fetch(`${baseDbUrl}/basketData/${userId}.json`, { method: 'DELETE' });
-
-        // 2. UserList içindeki refresh değerini true yap (PATCH)
-        await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
-            method: 'PATCH',
-            body: JSON.stringify({ refresh: true })
-        });
-
-        // 3. Zamanlayıcıyı başlat (60 saniye)
-        startTimer(60);
-      
-    } catch (err) {
-        console.error("İşlem hatası:", err);
-        alert("Bir hata oluştu.");
-    }
-}
-
-function startTimer(seconds) {
-    const expireTime = Date.now() + (seconds * 1000);
-    localStorage.setItem("timerExpire", expireTime);
-    runVisualTimer(expireTime);
-}
-
-function runVisualTimer(expireTime) {
-    const btn = document.getElementById("reset-btn");
-    const display = document.getElementById("timer-display");
-    
-    btn.disabled = true;
-    btn.style.opacity = "0.5";
-    btn.style.cursor = "not-allowed";
-
-    clearInterval(countdownInterval);
-    countdownInterval = setInterval(() => {
-        const now = Date.now();
-        const timeLeft = Math.max(0, Math.floor((expireTime - now) / 1000));
-
-        if (timeLeft <= 0) {
-            clearInterval(countdownInterval);
-            display.innerText = "";
-            btn.disabled = false;
-            btn.style.opacity = "1";
-            btn.style.cursor = "pointer";
-            localStorage.removeItem("timerExpire");
-        } else {
-            const mins = Math.floor(timeLeft / 60);
-            const secs = timeLeft % 60;
-            display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-    }, 1000);
-}
-
-function checkTimer() {
-    const expireTime = localStorage.getItem("timerExpire");
-    if (expireTime) {
-        const now = Date.now();
-        if (now < expireTime) {
-            runVisualTimer(parseInt(expireTime));
-        } else {
-            localStorage.removeItem("timerExpire");
-        }
-    }
-}
-function toggleLogsPanel() {
-    const content = document.getElementById("logs-main-content");
-    const chevron = document.getElementById("logs-main-chevron");
-    const isOpen = content.classList.toggle("open");
-    
-    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
-    
-    // Panel ilk kez açılıyorsa veya açıldığında taze veri istiyorsak
-    if(isOpen) {
-        renderLogs(); 
-    }
-}
-
-// Logları çekme ve filtreleme fonksiyonu
-let lastProcessedLog = ""; // Sayfa açıkken son çalınan sesi takip eder
-
-async function renderLogs() {
-    const container = document.getElementById("logs-list");
-    const currentUserId = localStorage.getItem("user");
-    const bingSound = document.getElementById("bing-sound");
-    
-    if (!currentUserId) return;
-
+async function renderUserPanel() {
+    const user = localStorage.getItem("user");
+    if (!user) return;
     try {
         const res = await fetch(`${baseDbUrl}/ServerList.json`);
         const serverData = await res.json();
-        let allLogs = []; 
+        const container = document.getElementById("admin-users-list");
+        if (!container) return;
 
+        let rows = "";
         for (let deviceId in serverData) {
             const device = serverData[deviceId];
-            if (device.logs) {
-                Object.values(device.logs).forEach(logMessage => {
-                    if (String(logMessage).includes(currentUserId)) {
-                        let cleanedMessage = logMessage.replace(currentUserId + ":", "");
-                        cleanedMessage = cleanedMessage.replace("(Uzaktan)", "").trim();
-                        if (!cleanedMessage.endsWith(".")) cleanedMessage += ".";
+            const tekKey = `${user}_tek`, cokKey = `${user}_cok`;
+            const canUse = device.Active === true, isOnline = device.Status === true;
+            
+            rows += `
+                <tr style="opacity: ${canUse ? '1' : '0.4'}">
+                    <td style="text-align:left; padding-left:15px; color:#e0e0e0; font-weight:500;">
+                        <span style="color: ${isOnline ? '#10b981' : '#ef4444'}; margin-right: 8px;">${isOnline ? '●' : '○'}</span> 
+                        ${deviceId.replace("Device", "Sunucu ")}
+                    </td>
+                    <td><label class="switch"><input type="checkbox" ${(device.UserList && device.UserList[tekKey]) ? "checked" : ""} ${!canUse ? "disabled" : ""} onchange="updateServerStatus('${deviceId}', '${tekKey}', this.checked)"><span class="slider"></span></label></td>
+                    <td><label class="switch"><input type="checkbox" ${(device.UserList && device.UserList[cokKey]) ? "checked" : ""} ${!canUse ? "disabled" : ""} onchange="updateServerStatus('${deviceId}', '${cokKey}', this.checked)"><span class="slider"></span></label></td>
+                </tr>`;
+        }
 
-                        const timePart = cleanedMessage.split(" : ")[0] || "00:00:00";
+        container.innerHTML = `
+            <div class="user-admin-card">
+                <div class="user-card-header"><div class="user-info" style="padding: 10px;"><span style="color: #00ABCC;">●</span> Aktif Sunucu Listesi</div></div>
+                <div class="user-card-content open">
+                    <table class="server-table">
+                        <thead><tr><th style="text-align:left; padding-left:15px;">Sunucu Durumu</th><th>Tekli</th><th>Çoklu</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    } catch (err) { console.error(err); }
+}
 
-                        allLogs.push({
-                            device: deviceId.replace("Device", "Server "),
-                            message: cleanedMessage,
-                            time: timePart,
-                            raw: logMessage // Ses kontrolü için ham mesajı tutalım
-                        });
+async function updateServerStatus(deviceId, key, isChecked) {
+    try {
+        const res = await fetch(`${baseDbUrl}/ServerList/${deviceId}/UserList/${key}.json`, {
+            method: 'PUT', body: JSON.stringify(isChecked ? true : null)
+        });
+        if (res.ok) { renderUserPanel(); renderLogs(); }
+    } catch (err) { alert("Bağlantı hatası: Değişiklik kaydedilemedi."); }
+}
+
+async function renderLogs() {
+    const user = localStorage.getItem("user"), container = document.getElementById("logs-list"), bingSound = document.getElementById("bing-sound");
+    if (!user || !container) return;
+
+    try {
+        const res = await fetch(`${baseDbUrl}/ServerList.json`), serverData = await res.json();
+        if (!serverData) return container.innerHTML = "Veri alınamadı.";
+
+        let allLogs = [];
+        for (let deviceId in serverData) {
+            if (serverData[deviceId].logs) {
+                Object.values(serverData[deviceId].logs).forEach(logMsg => {
+                    const msgStr = String(logMsg);
+                    if (msgStr.includes(user)) {
+                        let cleaned = msgStr.replace(user + ":", "").replace("(Uzaktan)", "").trim();
+                        if (!cleaned.endsWith(".")) cleaned += ".";
+                        allLogs.push({ device: deviceId.replace("Device", "Server "), message: cleaned, time: cleaned.split(" : ")[0] || "00:00:00", raw: logMsg });
                     }
                 });
             }
         }
 
-        // Saate göre sırala
         allLogs.sort((a, b) => b.time.localeCompare(a.time));
+        allLogs = allLogs.slice(0, 50);
 
-        // --- SES ÇALMA MANTIĞI ---
         if (allLogs.length > 0) {
-            const latestLog = allLogs[0]; // En yeni log (sıralandığı için)
-            
-            // Eğer en yeni log "Eklendi" içeriyorsa VE daha önce bu mesaj için ses çalınmadıysa
-            if (latestLog.message.includes("Eklendi") && lastProcessedLog !== latestLog.raw) {
-                bingSound.play().catch(e => console.log("Ses çalma engellendi: ", e));
-                lastProcessedLog = latestLog.raw; // Aynı log için tekrar çalmasın
+            if (allLogs[0].message.includes("Eklendi") && lastProcessedLog !== allLogs[0].raw) {
+                if(bingSound) bingSound.play().catch(()=>{});
+                lastProcessedLog = allLogs[0].raw;
             }
-        }
-        // -------------------------
-
-        // Arayüzü çizdirme (Map kısmı aynı kalıyor)
-        if (allLogs.length > 0) {
             container.innerHTML = allLogs.map(log => {
-                const parts = log.message.split(" : ");
-                const timeDisplay = parts[0] || "";
-                const actionPart = parts[1] || log.message;
-
-                let actionBgColor = "#ffffff"; 
-                if (actionPart.includes("Etkisizleştirildi")) actionBgColor = "#FF5454";
-                else if (actionPart.includes("Etkinleştirildi")) actionBgColor = "#73FF7A";
-                else if (actionPart.includes("Eklendi")) actionBgColor = "#00FFFF";
-
+                const parts = log.message.split(" : "), actionPart = parts[1] || log.message;
+                const badgeColor = actionPart.includes("Etkisizleştirildi") ? "#B91010" : actionPart.includes("Etkinleştirildi") ? "#B9B610" : actionPart.includes("Eklendi") ? "#10b981" : "#ffffff";
                 return `
-                    <div style="margin-bottom: 10px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd;">
-                        <div style="background-color: #690000; color: white; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;">
-                            <b style="font-size: 11px; text-transform: uppercase;">${log.device}</b>
-                            <span style="font-size: 10px; opacity: 0.9; font-weight: bold;">${timeDisplay}</span>
-                        </div>
-                        <div style="background-color: ${actionBgColor}; padding: 12px; color: #000; font-size: 13px; font-weight: 600;">
-                            ${actionPart}
-                        </div>
-                    </div>
-                `;
+                    <div style="margin: 8px; border-radius: 10px; background: rgba(0,171,204,0.85); border: 1px solid rgba(0,0,0,0.05); overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <div style="padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05);"><span style="font-size: 10px; font-weight: bold; color: #1d1d27;">${log.device}</span><span style="font-size: 10px; color: #1d1d27;">${parts[0] || ""}</span></div>
+                        <div style="padding: 10px; background: ${badgeColor}; color: #1d1d27; font-size: 12px; font-weight: 600;">${actionPart}</div>
+                    </div>`;
             }).join("");
-        } else {
-            container.innerHTML = "<div style='color:#333; text-align:center; padding:20px;'>Kayıt bulunamadı.</div>";
-        }
-        
-    } catch (err) {
-        console.error("Log hatası:", err);
-    }
-}
-// Master Paneli Aç/Kapat
-function toggleMasterPanel() {
-    const content = document.getElementById("master-main-content");
-    const chevron = document.getElementById("master-chevron");
-    const isOpen = content.classList.toggle("open");
-    chevron.style.transform = isOpen ? "rotate(180deg)" : "rotate(0deg)";
-    if(isOpen) renderMasterLogs();
+        } else { container.innerHTML = "<div style='color:#777; text-align:center; padding:30px;'>Kayıt bulunamadı.</div>"; }
+    } catch (err) { container.innerHTML = "Hata: " + err.message; }
 }
 
-async function renderMasterLogs() {
-    // Sadece admin (197127) ise çalıştır
-    if (localStorage.getItem("user") !== "197127") return;
+async function switchBasketMode(mode) {
+    if (currentBasketTab === mode) return; 
+    const tekliCont = document.getElementById('container-tekli'), cokluCont = document.getElementById('container-coklu');
+    
+    document.getElementById('tab-tekli').classList.toggle('active-tab', mode === 'tekli');
+    document.getElementById('tab-coklu').classList.toggle('active-tab', mode === 'coklu');
+    tekliCont.style.display = mode === 'tekli' ? 'block' : 'none';
+    cokluCont.style.display = mode === 'coklu' ? 'block' : 'none';
+    
+    if (mode === 'tekli') { !basketLoaded ? await loadBasketData() : updateBasketCountFromContainer(tekliCont); } 
+    else { !basketLoaded2 ? await loadBasketData2() : updateBasketCountFromContainer(cokluCont); }
+    currentBasketTab = mode;
+}
 
-    const container = document.getElementById("master-list");
+async function loadBasketData() {
+    if (basketLoaded) return;
+    const userId = localStorage.getItem("user"), container = document.getElementById('container-tekli');
+    container.innerHTML = `<p style="text-align:center; color:#666; padding:20px;">Yükleniyor...</p>`;
+
     try {
-        const res = await fetch(`${baseDbUrl}/ServerList.json`);
-        const serverData = await res.json();
-        let allMasterLogs = [];
+        const items = await (await fetch(`${baseDbUrl}/basketData/${userId}.json`)).json();
+        if (items && items.length > 0) {
+            container.innerHTML = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 8px 100px 8px;">${items.map(p => createProductCardHTML(p)).join('')}</div>`;
+            basketLoaded = true; 
+            document.getElementById("basket-count").innerText = items.length;
+        } else { showEmptyInContainer(container); }
+    } catch (e) { container.innerHTML = "Hata oluştu."; basketLoaded = false; }
+}
 
-        for (let deviceId in serverData) {
-            const device = serverData[deviceId];
-            if (device.logs) {
-                Object.values(device.logs).forEach(logMsg => {
-                    // 1. Saati ayıklayalım (Baştaki [Saat] için)
-                    const timePart = String(logMsg).split(" : ")[0] || "00:00:00";
-                    
-                    // 2. Mesaj içeriğini temizleyelim (ID'yi koruyarak)
-                    // Baştaki saati ve " : " kısmını atıyoruz
-                    let cleanContent = String(logMsg).includes(" : ") ? String(logMsg).split(" : ").slice(1).join(" : ") : logMsg;
-                    
-                    // "(Uzaktan)" yazısını silelim
-                    cleanContent = cleanContent.replace("(Uzaktan)", "").trim();
-                    
-                    allMasterLogs.push({
-                        device: deviceId.replace("Device", "Server "), // S2 yerine Server 2
-                        content: cleanContent,
-                        time: timePart
-                    });
-                });
+async function loadBasketData2() {
+    const userId = localStorage.getItem("user"), container = document.getElementById('container-coklu');
+    container.innerHTML = `<p style="text-align:center; color:#666; padding:20px;">Yükleniyor...</p>`;
+
+    try {
+        const items = await (await fetch(`${baseDbUrl}/basketData2/${userId}.json`)).json();
+        if (items && items.length > 0) {
+            const grouped = items.reduce((acc, item) => {
+                const binName = item.bin || "DİĞER";
+                acc[binName] = acc[binName] || [];
+                acc[binName].push(item);
+                return acc;
+            }, {});
+
+            let html = `<div style="padding: 8px 8px 100px 8px;">`;
+            for (const bin in grouped) {
+                html += `
+                <div class="bin-section">
+                    <div class="bin-header" onclick="this.closest('.bin-section').classList.toggle('collapsed')" style="cursor:pointer; background: #333; color: #00ABCC; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <span><span class="bin-icon">▼</span> <b>SEPET : ${bin}</b></span><span style="color: white; font-size: 11px;">${grouped[bin].length} Ürün</span>
+                    </div>
+                    <div class="bin-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 5px;">
+                        ${grouped[bin].map(p => createProductCardHTML(p)).join('')}
+                    </div>
+                </div>`;
             }
-        }
+            container.innerHTML = html + `</div>`;
+            basketLoaded2 = true;
+            document.getElementById("basket-count").innerText = items.length;
+        } else { showEmptyInContainer(container); }
+    } catch (e) { container.innerHTML = "Hata oluştu."; }
+}
 
-        // Saate göre sırala (En yeni en üstte)
-        allMasterLogs.sort((a, b) => b.time.localeCompare(a.time));
+function updateBasketCountFromContainer(container) { document.getElementById("basket-count").innerText = container.querySelectorAll('.sepet-ozel-kart').length || 0; }
+function showEmptyInContainer(container) {
+    container.innerHTML = `<p style="margin-top:10px; text-align: center; font-size:12px; color:#6b7280;"> Sepetinizde ürün bulunmamaktadır.</p>`;
+    document.getElementById("basket-count").innerText = "0";
+}
 
-        // Ekrana yazdır (Başlık şeridi eklenmiş format)
-        container.innerHTML = allMasterLogs.map(log => `
-            <div style="margin-bottom: 8px; border-left: 3px solid #690000; background: #1a1a1a; border-radius: 4px; overflow: hidden;">
-                <div style="background: #2a2a2a; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
-                    <b style="color: #ff4444; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">${log.device}</b>
-                    <span style="color: #888; font-size: 10px; font-weight: bold;">[${log.time}]</span>
-                </div>
-                <div style="padding: 8px 10px; color: #0f0; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">
-                    ${log.content}
+function createProductCardHTML(p) {
+    const safeDesc = p.description.replace(/'/g, "\\'");
+    return `
+    <div class="card sepet-ozel-kart" onclick="handleDoubleClick('${p.orderProductId}')" style="min-height: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <img src="${p.imageUrl.replace(/\/mnresize\/\d+\/\d+\//, "/mnresize/600/900/")}" style="width: 100%; height: 220px; object-fit: cover; pointer-events: none;" oncontextmenu="return false;" ondragstart="return false;">
+        <div style="padding: 8px; display: flex; flex-direction: column; gap: 4px; flex-grow: 1;">
+            <div style="font-weight: 700; font-size: 12px; color: #333; text-transform: uppercase;">${p.brand}</div>
+            <div style="font-size: 11px; color: #444; height: 28px; overflow: hidden; line-height: 1.2;">${p.description}</div>
+            <div class="urun-detay-kutusu">
+                <div style="font-size: 10px; color: #555;"><b>BEDEN :</b> <span style="font-family: monospace;">${p.size}</span></div>
+                <div style="font-size: 10px; color: #555;"><b>RENK :</b> <span style="font-family: monospace;">${p.color || '-'}</span></div>
+                <div style="border-top: 1px solid #e0e0e0; padding-top: 4px; display: flex; flex-direction: column; gap: 1px;">
+                    <div style="font-size: 10px; color: #555;"><b>EAN :</b> <span style="font-family: monospace;">${p.ean || 'YOK'}</span></div>
+                    <div style="font-size: 10px; color: #555;"><b>MALZEME :</b> <span style="font-family: monospace;">${p.orderProductId}</span></div>
                 </div>
             </div>
-        `).join("");
+            <div class="timer-data" data-startdate="${p.date}" style="width: 100%;">
+                <div style="width: 100%; height: 6px; background: #e0e0e0; border-radius: 10px; overflow: hidden;"><div class="progress-bar-fill" style="height: 100%; width: 100%; background: #34d399;"></div></div>
+                <div style="font-size: 10px; font-weight: 600; color: #666; text-align: center; margin-top: 0px;" class="time-left-text">00:00:00</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: auto; position: relative; z-index: 999;">
+                <button onclick="event.stopPropagation(); openModal('${safeDesc}', 'Stok bilgisi sorgulanıyor...')" style="font-size: 10px; padding: 10px 0; background: #00ABCC; color: white; border: none; border-radius: 5px; font-weight: bold;">STOK</button>
+                <button onclick="event.stopPropagation(); findMovementInfo('${p.orderProductId}', '${safeDesc}')" style="font-size: 10px; padding: 10px 0; background: #00ABCC; color: white; border: none; border-radius: 5px; font-weight: bold;">HAREKET</button>
+                <button onclick="event.stopPropagation(); openModal('${safeDesc}', '', true, '${p.ean}')" style="font-size: 10px; padding: 10px 0; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold;">BARKOD</button>
+                <button onclick="event.stopPropagation(); findSectionInfo('${p.orderProductId}', '${safeDesc}')" style="font-size: 10px; padding: 10px 0; background: #333; color: white; border: none; border-radius: 5px; font-weight: bold;">SECTION</button>
+            </div>
+        </div>
+    </div>`;
+}
 
-    } catch (err) { 
-        console.error("Master log hatası:", err); 
+function handleDoubleClick(id) {
+    const now = Date.now();
+    if (now - lastClick < 400) window.open("https://www.boyner.com.tr/search?q=" + id.slice(0, -3), "_blank");
+    lastClick = now;
+}
+
+function openModal(title, contentHTML, isBarcode = false, ean = "") {
+    document.getElementById("modalTitle").innerText = title;
+    const body = document.getElementById("modalBody");
+    body.innerHTML = isBarcode ? '<svg id="barcodeCanvas"></svg>' : contentHTML;
+    document.getElementById("mainModal").style.display = "flex";
+    if(isBarcode && ean) {
+        setTimeout(() => {
+            try { JsBarcode("#barcodeCanvas", ean, { format: "CODE128", width: 2, height: 60, displayValue: true }); }
+            catch (e) { body.innerHTML = "Barkod hatası: " + ean; }
+        }, 100);
     }
 }
-async function clearAllLogs() {
-    // Sadece admin (197127) yetkisine sahip mi kontrol et
-    const currentUser = localStorage.getItem("user");
-    if (currentUser !== "197127") {
-        alert("Bu işlem için yetkiniz yok!");
-        return;
-    }
 
-    if (!confirm("TÜM sunuculardaki log geçmişini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) return;
+const closeModal = () => document.getElementById("mainModal").style.display = "none";
+
+async function findMovementInfo(orderProductId, title) {
+    document.getElementById("modalTitle").innerText = title;
+    const modalBody = document.getElementById("modalBody");
+    modalBody.innerHTML = "Yükleniyor...";
+    document.getElementById("mainModal").style.display = "flex";
 
     try {
-        // 1. Önce mevcut sunucu listesini alalım
+        const lines = (await (await fetch('hareket.txt')).text()).split(/\r?\n/).filter(l => l.trim() !== "");
+        const matches = lines.filter(l => l.split('\t')[0] && l.split('\t')[0].trim() === orderProductId.trim());
+        if (matches.length > 0) {
+            let sum = 0, html = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size: 10px;"><tr style="background: #f3f4f6;"><th>KOD</th><th>ADET</th><th>TARİH</th><th>AÇIKLAMA</th></tr>`;
+            matches.forEach(m => {
+                const c = m.split('\t'); sum += parseFloat(c[3]) || 0;
+                html += `<tr><td>${c[2]||'-'}</td><td style="font-weight:bold;">${c[3]||'-'}</td><td>${c[4]||'-'}</td><td>${c[5]||'-'}</td></tr>`;
+            });
+            modalBody.innerHTML = html + `<tr style="font-weight:bold;"><td style="text-align:right;">TOPLAM:</td><td>${sum}</td><td colspan="2"></td></tr></table></div>`;
+        } else modalBody.innerHTML = "<div style='color:red; padding:20px;'>Hareket bulunamadı!</div>";
+    } catch (e) { modalBody.innerHTML = "Dosya okuma hatası."; }
+}
+
+window.findSectionInfo = async function(orderProductId, title) {
+    document.getElementById("modalTitle").innerText = title;
+    const modalBody = document.getElementById("modalBody");
+    modalBody.innerHTML = "Yükleniyor...";
+    document.getElementById("mainModal").style.display = "flex";
+
+    try {
+        const matches = (await (await fetch('section.txt')).text()).split(/\r?\n/).filter(l => l.split('\t')[0].trim() === orderProductId.trim());
+        if (matches.length > 0) {
+            let html = `<table style="width:100%; font-size: 11px; border-collapse: collapse;"><tr style="background:#eee;"><th>DEPO</th><th>SEC</th><th>ADET</th></tr>`;
+            matches.forEach(m => { const c = m.split('\t'); html += `<tr><td>${c[3]}</td><td style="font-weight:bold; color:blue;">${c[4]}</td><td>${c[5]}</td></tr>`; });
+            modalBody.innerHTML = html + `</table>`;
+        } else modalBody.innerHTML = "<div style='color:red; padding:20px;'>Section bulunamadı.</div>";
+    } catch (e) { modalBody.innerHTML = "Dosya okuma hatası."; }
+}
+
+function startSocialMode() { loadMessages(); socialInterval = setInterval(loadMessages, 3000); }
+
+async function loadMessages() {
+    try {
+        const [msgRes, usersRes] = await Promise.all([fetch(`${baseDbUrl}/messages.json`), fetch(`${baseDbUrl}/UserList.json`)]);
+        const messages = await msgRes.json(), users = await usersRes.json(), chatContainer = document.getElementById("chat-container");
+        
+        if (!messages) return chatContainer.innerHTML = '<div class="empty-state">Henüz mesaj yok.</div>';
+
+        const currentMsgCount = Object.keys(messages).length;
+        if (currentMsgCount > lastMessageCount) {
+            if (lastMessageCount !== 0) document.getElementById("msgSound")?.play().catch(()=>{});
+            lastMessageCount = currentMsgCount;
+        } else return; 
+
+        let chatHTML = "";
+        const currentUser = localStorage.getItem("user"), currentTitle = users[currentUser]?.userTitle || "";
+
+        Object.keys(messages).forEach(id => {
+            const m = messages[id], uInfo = users[m.user] || {}, senderTitle = uInfo.userTitle || "";
+            if (currentTitle.substring(0, 4) !== senderTitle.substring(0, 4)) return;
+
+            const isMe = m.user === currentUser;
+            let productHTML = "";
+            if (m.type === "product_share" && m.product) {
+                productHTML = `<div class="shared-product-wrapper" style="margin-top: 10px; width: 100%; color: #333 !important;">${createProductCardHTML(m.product).replace('onclick="removeItem', 'style="display:none" onclick="removeItem')}</div>`;
+            }
+
+            chatHTML += `
+                <div class="message-card ${isMe ? 'my-message' : ''}" style="width: ${m.type === 'product_share' ? '280px' : 'auto'}; max-width: 85%;">
+                    <div class="msg-header"><span style="color: ${isMe ? '#fff' : (uInfo.userColor || '#00ABCC')}">${m.user}</span><span class="user-title" style="opacity: 0.8; font-size: 10px; margin-left: 5px;">[${uInfo.userTitle || 'Üye'}]</span></div>
+                    <div class="msg-text" style="word-break: break-word;">${m.text}</div>${productHTML}
+                    <div class="msg-time" style="font-size: 9px; margin-top: 5px; text-align: right; opacity: 0.7;">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>`;
+        });
+        
+        chatContainer.innerHTML = chatHTML;
+        setTimeout(() => chatContainer.scrollTop = chatContainer.scrollHeight, 100);
+    } catch (e) { console.error(e); }
+}
+
+async function sendMessage() {
+    const input = document.getElementById("msgInput"), text = input.value.trim(), currentUser = localStorage.getItem("user");
+    if (!text) return;
+    try {
+        await fetch(`${baseDbUrl}/messages.json`, { method: "POST", body: JSON.stringify({ user: currentUser, text: text, timestamp: Date.now() }) });
+        input.value = ""; loadMessages();
+    } catch (e) { console.error(e); }
+}
+
+setInterval(() => {
+    document.querySelectorAll('.timer-data').forEach(el => {
+        const timeLeft = (new Date(el.dataset.startdate).getTime() + 12 * 60 * 60 * 1000) - new Date().getTime();
+        const fill = el.querySelector('.progress-bar-fill'), text = el.querySelector('.time-left-text');
+        if (!fill || !text) return;
+
+        if (timeLeft <= 0) {
+            fill.style.width = "0%"; fill.style.background = "#ef4444"; text.innerText = "Süre Doldu!"; text.style.color = "#ef4444";
+        } else {
+            fill.style.width = ((timeLeft / (12 * 60 * 60 * 1000)) * 100) + "%";
+            const h = Math.floor(timeLeft / 3600000), m = Math.floor((timeLeft % 3600000) / 60000), s = Math.floor((timeLeft % 60000) / 1000);
+            text.innerText = `Kalan: ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            fill.style.background = timeLeft < 900000 ? "#ef4444" : timeLeft < 3600000 ? "#f59e0b" : "#34d399";
+        }
+    });
+}, 1000);
+// --- ADMİN SUNUCU YÖNETİM PANELİ FONKSİYONLARI ---
+
+async function renderAdminPanel() {
+    // Sadece admin ise çalışsın
+    if (!isAdmin) return;
+    const container = document.getElementById("admin-master-card");
+    if (!container) return;
+
+    try {
         const res = await fetch(`${baseDbUrl}/ServerList.json`);
         const serverData = await res.json();
         
-        if (!serverData) return;
-
-        const updates = {};
-        // 2. Her cihazın altındaki 'logs' kısmını null (boş) olarak işaretle
+        let rows = "";
         for (let deviceId in serverData) {
-            updates[`${deviceId}/logs`] = null;
+            const device = serverData[deviceId];
+            
+            // Veritabanından gelen boolean değerler
+            const isOnline = device.Status === true;
+            const isActive = device.Active === true;
+            const isServer = device.Server === true;
+            
+            rows += `
+                <tr>
+                    <td style="text-align:left; padding-left:15px; color:#e0e0e0; font-weight:500;">
+                        <span style="color: ${isOnline ? '#10b981' : '#ef4444'}; margin-right: 8px;">●</span> 
+                        ${deviceId}
+                    </td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${isActive ? "checked" : ""} onchange="updateAdminServerStatus('${deviceId}', 'ERİŞİM', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${isServer ? "checked" : ""} onchange="updateAdminServerStatus('${deviceId}', 'SERVER', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                </tr>`;
         }
 
-        // 3. Tek bir PATCH isteği ile tüm logları temizle
-        const patchRes = await fetch(`${baseDbUrl}/ServerList.json`, {
-            method: 'PATCH',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updates)
-        });
+        // Durum değişkenine göre dinamik değerler
+const currentRotation = isAdminPanelCollapsed ? "rotate(-90deg)" : "rotate(0deg)";
+const currentMaxHeight = isAdminPanelCollapsed ? "0px" : "2000px";
+const displayStyle = isAdminPanelCollapsed ? "none" : "block"; // Tamamen yok saymak için
 
-        if (patchRes.ok) {
-            alert("Tüm sistem logları başarıyla temizlendi.");
-            // Ekrandaki listeleri de anında boşaltalım
-            document.getElementById("logs-list").innerHTML = "Loglar temizlendi.";
-            if(document.getElementById("master-list")) {
-                document.getElementById("master-list").innerHTML = "Sistem temizlendi.";
-            }
-        } else {
-            throw new Error("Silme işlemi başarısız.");
-        }
-    } catch (err) {
-        console.error("Log silme hatası:", err);
-        alert("Loglar silinirken bir hata oluştu!");
+container.innerHTML = `
+    <div style="width: 100%; background: #1d1d27; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; transition: all 0.3s ease; margin-bottom: 20px;">
+        
+        <div style="width:100%; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #1d1d27;" onclick="toggleAdminPanel()">
+            <div style="text-align: left; color: #ffffff; font-weight: 600;">
+                <span style="color: #00ABCC; margin-right: 5px;">●</span> Sunucu Yönetimi
+            </div>
+            <div id="admin-panel-icon" style="transition: transform 0.3s ease; color: #00ABCC; font-size: 12px; transform: ${currentRotation};">▼</div>
+        </div>
+        
+        <div id="admin-panel-content" style="max-height: ${currentMaxHeight}; overflow: hidden; transition: max-height 0.3s ease-in-out;">
+            <div style="padding: 0 15px 15px 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+                <table class="server-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="color: #6b7280; font-size: 12px; text-transform: uppercase;">
+                            <th style="text-align:left; padding: 10px 0;">Sunucu</th>
+                            <th style="text-align:center;">Active</th>
+                            <th style="text-align:center;">Server</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">
+                    <button class="btn-main" style="background:#374151; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;" onclick="event.stopPropagation(); adminAction('check')">CHECK</button>
+                    <button class="btn-main" style="background:#f59e0b; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;" onclick="event.stopPropagation(); adminAction('clear_log')">CLEAR LOG</button>
+                    <button class="btn-main" style="background:#ef4444; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;" onclick="event.stopPropagation(); adminAction('clear_chat')">CLEAR CHAT</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    } catch (err) { console.error("Hata:", err); }
+}
+function toggleAdminPanel() {
+    isAdminPanelCollapsed = !isAdminPanelCollapsed;
+    const content = document.getElementById("admin-panel-content");
+    const icon = document.getElementById("admin-panel-icon");
+    
+    if (isAdminPanelCollapsed) {
+        content.style.maxHeight = "0px";
+        icon.style.transform = "rotate(-90deg)";
+    } else {
+        // scrollHeight sayesinde içeriğin gerçek yüksekliğini alır
+        content.style.maxHeight = content.scrollHeight + "px";
+        icon.style.transform = "rotate(0deg)";
+        
+        // Animasyon bittikten sonra limiti kaldır ki yeni satır eklenirse büyüyebilsin
+        setTimeout(() => {
+            if(!isAdminPanelCollapsed) content.style.maxHeight = "2000px";
+        }, 300);
     }
 }
-</script>
+// Switchlerden gelen komutla veritabanını anında günceller
+async function updateAdminServerStatus(deviceId, key, value) {
+    try {
+        await fetch(`${baseDbUrl}/ServerList/${deviceId}.json`, {
+            method: 'PATCH', 
+            body: JSON.stringify({ [key]: value })
+        });
+        // İşlem bitince arayüzü yenile
+        renderAdminPanel(); 
+    } catch (err) { console.error("Admin güncelleme hatası:", err); }
+}
 
+// Admin buton görevleri
+async function adminAction(action) {
+    try {
+        if (action === 'check') {
+            // Önce mevcut ServerList'i çekip hepsi için Status = false objesi hazırlıyoruz
+            const serverData = await (await fetch(`${baseDbUrl}/ServerList.json`)).json();
+            const updates = {};
+            for (let deviceId in serverData) {
+                updates[`${deviceId}/Status`] = false;
+            }
+            await fetch(`${baseDbUrl}/ServerList.json`, { method: 'PATCH', body: JSON.stringify(updates) });
+            alert("Tüm sunucuların Status değeri 'false' yapıldı.");
+            
+        } else if (action === 'clear_log') {
+            // Bütün cihazları gezip içlerindeki "logs" düğümünü siliyoruz
+            const serverData = await (await fetch(`${baseDbUrl}/ServerList.json`)).json();
+            for (let deviceId in serverData) {
+                await fetch(`${baseDbUrl}/ServerList/${deviceId}/logs.json`, { method: 'DELETE' });
+            }
+            alert("Tüm sunucu logları temizlendi.");
+            renderLogs(); // Mevcut log panelini de temizlemek için
+            
+        } else if (action === 'clear_chat') {
+            // Doğrudan messages düğümünü siliyoruz
+            await fetch(`${baseDbUrl}/messages.json`, { method: 'DELETE' });
+            alert("Sohbet (Chat) başarıyla temizlendi.");
+            loadMessages(); // Ekranda görünen chatleri uçurmak için
+        }
+        
+        renderAdminPanel(); // Buton işlemlerinden sonra tabloyu güncelle
+    } catch (err) { 
+        console.error("Admin işlem hatası:", err); 
+        alert("Bir hata oluştu!"); 
+    }
+}
+async function renderAdminLogsPanel() {
+    if (!isAdmin) return;
+    
+    // Eğer kullanıcı log akışını durdurduysa, fonksiyon hiçbir şeyi güncellemeden çıksın
+    if (isLogUpdatePaused) return;
+
+    const container = document.getElementById("admin-logs-card");
+    if (!container) return;
+
+    try {
+        const res = await fetch(`${baseDbUrl}/ServerList.json`);
+        const serverData = await res.json();
+        
+        let allLogsArray = [];
+
+        // 1. Tüm logları topla
+        for (let deviceId in serverData) {
+            const logs = serverData[deviceId].logs;
+            if (logs) {
+                for (let logId in logs) {
+                    allLogsArray.push({
+                        deviceId: deviceId,
+                        rawContent: logs[logId]
+                    });
+                }
+            }
+        }
+
+        // 2. TERS SIRALAMA: En son eklenen log en üstte görünsün
+        // Firebase keyleri (push id) kronolojik olduğu için reverse yapıyoruz
+        allLogsArray.reverse();
+
+        let logRows = "";
+        allLogsArray.forEach(item => {
+            let logText = (typeof item.rawContent === 'object') ? item.rawContent.message : item.rawContent;
+            
+            if (logText && typeof logText === 'string') {
+                const parts = logText.split(':');
+                let formattedLine = "";
+                
+                if (parts.length >= 4) {
+                    const timePart = `${parts[0].trim()}:${parts[1].trim()}:${parts[2].trim()}`;
+                    const sicilPart = parts[3].trim();
+                    const msgPart = parts.slice(4).join(':').trim();
+                    formattedLine = `<span style="color: #6b7280;">${timePart} - </span><span style="color: #ffffff;">${sicilPart}</span> : <span style="color: #e0e0e0;">${msgPart}</span>`;
+                } else {
+                    formattedLine = logText;
+                }
+
+                logRows += `
+                    <div style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 11px; line-height: 1.4;">
+                        <span style="color: #00ABCC; font-weight: bold; margin-right: 5px;">[${item.deviceId}]</span> 
+                        ${formattedLine}
+                    </div>`;
+            }
+        });
+
+        if (allLogsArray.length === 0) {
+            logRows = '<div style="padding:15px; color:#6b7280; font-size:12px; text-align:center;">Henüz log kaydı yok.</div>';
+        }
+
+        const currentRotation = isAdminLogsCollapsed ? "rotate(-90deg)" : "rotate(0deg)";
+        const currentMaxHeight = isAdminLogsCollapsed ? "0px" : "400px";
+        
+        // Butonun o anki durumu (Duraklatıldıysa Kırmızı, Akıyorsa Yeşil/Mavi)
+        const pauseBtnText = isLogUpdatePaused ? "AKışı BAŞLAT" : "AKışı DURDUR";
+        const pauseBtnColor = isLogUpdatePaused ? "#10b981" : "#ef4444";
+
+        container.innerHTML = `
+            <div style="width: 100%; background: #1d1d27; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden; transition: all 0.3s ease; margin-top:10px;">
+                <div style="width:100%; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #1d1d27;" onclick="toggleAdminLogsPanel()">
+                    <div style="text-align: left; color: #ffffff; font-weight: 600;">
+                        <span style="color: #f59e0b; margin-right: 5px;">●</span> Sistem Logları
+                    </div>
+                    <div id="admin-logs-icon" style="transition: transform 0.3s ease; color: #f59e0b; font-size: 12px; transform: ${currentRotation};">▼</div>
+                </div>
+                
+                <div id="admin-logs-content" style="max-height: ${currentMaxHeight}; overflow-y: auto; transition: max-height 0.3s ease-in-out; background: #1a1a23;">
+                    <div style="padding: 10px 15px; background: #14141b; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end;">
+                        <button onclick="event.stopPropagation(); toggleLogPause()" style="background: transparent; border: 1px solid ${pauseBtnColor}; color: ${pauseBtnColor}; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold; text-transform: uppercase;">
+                            ${pauseBtnText}
+                        </button>
+                    </div>
+                    <div style="border-top: 1px solid rgba(255,255,255,0.05);">
+                        ${logRows}
+                    </div>
+                </div>
+            </div>`;
+    } catch (err) { console.error("Log hatası:", err); }
+}
+function toggleAdminLogsPanel() {
+    isAdminLogsCollapsed = !isAdminLogsCollapsed;
+    const content = document.getElementById("admin-logs-content");
+    const icon = document.getElementById("admin-logs-icon");
+    
+    if (isAdminLogsCollapsed) {
+        content.style.maxHeight = "0px";
+        icon.style.transform = "rotate(-90deg)";
+    } else {
+        content.style.maxHeight = "400px"; // İçerik çok uzun olabileceği için sabit max-height ve scroll daha iyi olur
+        icon.style.transform = "rotate(0deg)";
+    }
+}
+function toggleLogPause() {
+    isLogUpdatePaused = !isLogUpdatePaused;
+    // Buton metnini ve rengini anında değiştirmek için paneli bir kez manuel tetikleyelim
+    // Ancak pause durumuna geçtiysek render fonksiyonu en başta return olacağı için 
+    // sadece görselliği elle de değiştirebiliriz. En temizi renderAdminLogsPanel'i pause kontrolünü 
+    // aşacak küçük bir parametreyle çağırmaktır:
+    renderAdminLogsPanelInternal(); 
+}
+
+// Yardımcı bir fonksiyon: Pause durumuna bakmadan render eder (Sadece buton değişimi için)
+async function renderAdminLogsPanelInternal() {
+    // Geçici olarak pause'u görmezden gelip başlığı/butonu güncellemek için...
+    // Yukarıdaki renderAdminLogsPanel fonksiyonunun başına eklediğimiz `if(isLogUpdatePaused) return;` 
+    // kontrolünü sadece buton değişim anında aşmak için tasarlandı.
+    const tempPaused = isLogUpdatePaused;
+    isLogUpdatePaused = false; 
+    await renderAdminLogsPanel();
+    isLogUpdatePaused = tempPaused;
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </body>
 </html>
