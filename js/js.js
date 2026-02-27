@@ -51,3 +51,35 @@ window.addEventListener("resize", () => {
     offsetMenuBorder(activeItem, menuBorder);
     menu.style.setProperty("--timeOut", "none");
 });
+
+async function checkUserStatus() {
+    const user = localStorage.getItem("user");
+    if (!user) return;
+
+    try {
+        const res = await fetch(`${baseDbUrl}/UserList/${user}.json`);
+        const userData = await res.json();
+        const overlay = document.getElementById("access-denied-overlay");
+
+        // Eğer userStatu false ise veya kullanıcı veritabanından silinmişse
+        if (userData && userData.userStatu === false) {
+            overlay.style.display = "flex";
+            
+            // Diğer sekmelere geçişi engellemek için anasayfaya zorla
+            const pages = document.querySelectorAll('.tab-page');
+            pages.forEach((p, idx) => {
+                if(idx === 0) p.classList.add('active-page');
+                else p.classList.remove('active-page');
+            });
+            
+            // Menü seçimini de ilk sıraya çek
+            const menuItems = document.querySelectorAll(".menu__item");
+            if(menuItems.length > 0) clickItem(menuItems[0], 0);
+
+        } else {
+            overlay.style.display = "none";
+        }
+    } catch (err) {
+        console.error("Durum kontrol hatası:", err);
+    }
+}
