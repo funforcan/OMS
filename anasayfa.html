@@ -604,13 +604,13 @@ async function renderAdminPanel() {
                     </td>
                     <td>
                         <label class="switch">
-                            <input type="checkbox" ${isActive ? "checked" : ""} onchange="updateAdminServerStatus('${deviceId}', 'ERİŞİM', this.checked)">
+                            <input type="checkbox" ${isActive ? "checked" : ""} onchange="updateAdminServerStatus('${deviceId}', 'Active', this.checked)">
                             <span class="slider"></span>
                         </label>
                     </td>
                     <td>
                         <label class="switch">
-                            <input type="checkbox" ${isServer ? "checked" : ""} onchange="updateAdminServerStatus('${deviceId}', 'SERVER', this.checked)">
+                            <input type="checkbox" ${isServer ? "checked" : ""} onchange="updateAdminServerStatus('${deviceId}', 'Server', this.checked)">
                             <span class="slider"></span>
                         </label>
                     </td>
@@ -638,8 +638,8 @@ container.innerHTML = `
                     <thead>
                         <tr style="color: #6b7280; font-size: 12px; text-transform: uppercase;">
                             <th style="text-align:left; padding: 10px 0;">Sunucu</th>
-                            <th style="text-align:center;">Active</th>
-                            <th style="text-align:center;">Server</th>
+                            <th style="text-align:center;">ERİŞİM</th>
+                            <th style="text-align:center;">SERVER</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
