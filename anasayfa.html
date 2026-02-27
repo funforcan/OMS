@@ -11,6 +11,13 @@
 </head>
 <body>
 <div id="loader-overlay"><div class="loader"></div></div>
+<div id="access-denied-overlay" style="position: fixed; inset: 0; background: #1d1d27; z-index: 999999; display: none; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 20px;">
+    <div style="background: rgba(255, 255, 255, 0.05); padding: 40px; border-radius: 20px; border: 1px solid #ef4444; max-width: 400px;">
+        <div style="font-size: 50px; margin-bottom: 20px;">⚠️</div>
+        <h2 style="color: #ef4444; font-size: 18px; margin-bottom: 15px; font-weight: bold;">UYGULAMAYA ERİŞİMİNİZ YASAKLANMIŞTIR!</h2>
+        <button onclick="logout()" style="background: #ef4444; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">Çıkış Yap</button>
+    </div>
+</div>
 <div id="top-area">
     <div id="content">
         <div class="tab-page active-page">
@@ -37,6 +44,7 @@
 			<div id="admin-master-card" class="hidden"></div>
 			<div id="admin-logs-card" class="hidden"></div>
 			<div id="admin-bot-card" class="hidden"></div>
+			<div id="admin-user-management-card" class="hidden"></div>
         </div>
 
         <div class="tab-page">
@@ -122,6 +130,7 @@
 <script src="js/js.js"></script>
 <script>
 let isAdmin = false;
+let isModerator = false;
 const baseDbUrl = "https://funforcanserver-default-rtdb.europe-west1.firebasedatabase.app";
 let basketLoaded = false, basketLoaded2 = false;
 let currentBasketTab = 'tekli';
@@ -131,32 +140,51 @@ let isAdminLogsCollapsed = true;
 let isLogUpdatePaused = false; // Log akışını durdurup başlatmak için
 let isAdminBotCollapsed = true; // Bot yönetim paneli başlangıçta kapalı gelsin
 let expandedUsers = []; // Açık olan kullanıcı id'lerini tutacak
+let isUserMgmtCollapsed = true;
 window.onload = async () => {
     const loader = document.getElementById("loader-overlay");
     try {
         const user = localStorage.getItem("user");
-        if (user) showLoggedInState(user);
         
         if (user) {
+            showLoggedInState(user);
+            // İlk açılışta hemen kontrol et
+            await checkUserStatus(); 
+            
             renderUserPanel();
             renderLogs();
-            setInterval(() => {
-    if (localStorage.getItem("user")) { 
-        renderUserPanel(); 
-        renderLogs(); 
-        if(isAdmin) {
-    renderAdminPanel();
-    renderAdminLogsPanel(); // Bunu ekle
-	renderBotManagementPanel(); // Buraya ekledik
-}
-    }
-}, 3000);
+            
+            // Periyodik kontrol döngüsü
+            setInterval(async () => {
+                const currentUser = localStorage.getItem("user");
+                if (currentUser) { 
+                    // Her 3 saniyede bir veritabanından statü kontrolü yap
+                    await checkUserStatus(); 
+                    
+                    renderUserPanel(); 
+                    renderLogs(); 
+                    
+                    if(typeof isAdmin !== 'undefined' && isAdmin) {
+                        renderAdminPanel();
+                        renderAdminLogsPanel();
+                        renderBotManagementPanel();
+                        renderUserManagementPanel();	
+                    }
+                    if(typeof isModerator !== 'undefined' && isModerator) {
+                        renderBotManagementPanel();
+                    }					
+                }
+            }, 3000);
         }
-    } catch (err) { console.error(err); } 
-    finally {
+    } catch (err) { 
+        console.error("Yükleme hatası:", err); 
+    } finally {
         if (loader) {
             loader.style.opacity = "0";
-            setTimeout(() => { loader.style.display = "none"; document.body.classList.add("page-ready"); }, 400);
+            setTimeout(() => { 
+                loader.style.display = "none"; 
+                document.body.classList.add("page-ready"); 
+            }, 400);
         }
     }
 };
@@ -165,9 +193,136 @@ document.addEventListener("DOMContentLoaded", () => {
     const passwordInput = document.getElementById("password");
     if (passwordInput) passwordInput.addEventListener("keypress", e => { if (e.key === "Enter") handleAuth(); });
 });
+
+// --- KULLANICI YÖNETİM PANELİ ---
+async function renderUserManagementPanel() {
+    if (!isAdmin) return;
+    const container = document.getElementById("admin-user-management-card");
+    
+    // Panel içindeki scroll konumunu korumak için
+    const contentDiv = document.getElementById("user-mgmt-content");
+    let currentScroll = contentDiv ? contentDiv.scrollTop : 0;
+
+    try {
+        // Tüm verileri paralel çekelim
+        const [usersRes, basket1Res, basket2Res] = await Promise.all([
+            fetch(`${baseDbUrl}/UserList.json`),
+            fetch(`${baseDbUrl}/basketData.json`),
+            fetch(`${baseDbUrl}/basketData2.json`)
+        ]);
+
+        const usersData = await usersRes.json();
+        const basket1Data = await basket1Res.json() || {};
+        const basket2Data = await basket2Res.json() || {};
+
+        let rowsHtml = "";
+        
+        for (let userId in usersData) {
+            const user = usersData[userId];
+            
+            // ID yerine userTitle'ı alıyoruz, eğer yoksa alternatif olarak ID'yi gösteriyoruz
+            const displayName = user.userTitle ? user.userTitle : userId;
+
+            // basketData içinde bu kullanıcıya ait obje sayısı
+            const count1 = basket1Data[userId] ? Object.keys(basket1Data[userId]).length : 0;
+            const count2 = basket2Data[userId] ? Object.keys(basket2Data[userId]).length : 0;
+            
+            rowsHtml += `
+                <tr>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${user.userStatu ? "checked" : ""} 
+                                onchange="toggleUserStatus('${userId}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                    <td class="user-id" style="font-size: 11px; color: #ffffff;">${displayName}</td>
+                    <td style="color:#98F527; font-weight:bold;">${count1}</td>
+                    <td style="color:#00ABCC; font-weight:bold;">${count2}</td>
+                </tr>`;
+        }
+
+        const currentRotation = isUserMgmtCollapsed ? "rotate(-90deg)" : "rotate(0deg)";
+        const displayStatus = isUserMgmtCollapsed ? "none" : "block";
+
+        container.innerHTML = `
+    <div style="width: 100%; background: #1d1d27; border-radius: 14px; border: 1px solid rgba(0, 171, 204, 0.3); overflow: hidden;">
+        <div style="width:100%; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleUserMgmtPanel()">
+            <div style="text-align: left; color: #ffffff; font-weight: 600;">
+                <span style="color: #F527A9; margin-right: 5px;">●</span> Kullanıcı Yönetimi
+            </div>
+            <div id="user-mgmt-icon" style="transition: transform 0.3s ease; color: #F527A9; transform: ${currentRotation};">▼</div>
+        </div>
+
+        <div id="user-mgmt-content" style="display: ${displayStatus}; background: #16161f; border-top: 1px solid rgba(255,255,255,0.05);">
+            
+            <div style="max-height: 250px; overflow-y: auto; padding: 0 15px;">
+                <table class="user-mgmt-table">
+                    <thead style="position: sticky; top: 0; background: #16161f; z-index: 1;">
+                        <tr>
+                            <th>ERİŞİM</th>
+                            <th style="text-align:left; padding-left:10px;">KULLANICI</th>
+                            <th>TEKLİ</th>
+                            <th>ÇOKLU</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>
+
+            <div style="padding: 15px;">
+                <button class="refresh-all-btn" style="margin-top: 0;" onclick="refreshAllUsers()">TÜMÜNÜ YENİLE</button>
+            </div>
+        </div>
+    </div>`;
+
+        // Scroll konumunu geri yükle
+        const newContentDiv = document.getElementById("user-mgmt-content");
+        if (newContentDiv && !isUserMgmtCollapsed) {
+            newContentDiv.scrollTop = currentScroll;
+        }
+
+    } catch (err) { console.error("Panel yükleme hatası:", err); }
+}
+
+// --- PANEL AKSİYONLARI ---
+
+function toggleUserMgmtPanel() {
+    isUserMgmtCollapsed = !isUserMgmtCollapsed;
+    renderUserManagementPanel();
+}
+
+async function toggleUserStatus(userId, status) {
+    try {
+        await fetch(`${baseDbUrl}/UserList/${userId}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ userStatu: status })
+        });
+    } catch (err) { console.error("Durum güncellenemedi:", err); }
+}
+
+async function refreshAllUsers() {
+    if(!confirm("Tüm kullanıcıların verileri yenilenecek. Onaylıyor musunuz?")) return;
+    try {
+        const res = await fetch(`${baseDbUrl}/UserList.json`);
+        const users = await res.json();
+        const updates = {};
+        
+        for (let userId in users) {
+            updates[`${userId}/refresh`] = true;
+            updates[`${userId}/refresh2`] = true;
+        }
+
+        await fetch(`${baseDbUrl}/UserList.json`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+        alert("Tüm kullanıcılar için yenileme emri gönderildi.");
+    } catch (err) { console.error("Yenileme hatası:", err); }
+}
 // --- ADMİN BOT YÖNETİM PANELİ (TÜM KULLANICILAR) ---
 async function renderBotManagementPanel() {
-    if (!isAdmin) return;
+    if (!isAdmin && !isModerator) return;
     const container = document.getElementById("admin-bot-card");
     const contentDiv = document.getElementById("admin-bot-content");
     
@@ -242,7 +397,7 @@ async function renderBotManagementPanel() {
         const displayStatus = isAdminBotCollapsed ? "none" : "block";
 
         container.innerHTML = `
-            <div style="width: 100%; background: #1d1d27; border-radius: 14px; border: 1px solid rgba(0, 171, 204, 0.3); overflow: hidden;">
+            <div style="width: 100%; background: #1d1d27; border-radius: 14px; border: 1px solid rgba(0, 171, 204, 0.3); overflow: hidden; margin-bottom: 10px;">
                 <div style="width:100%; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #1d1d27;" onclick="toggleBotPanel()">
                     <div style="text-align: left; color: #ffffff; font-weight: 600;">
                         <span style="color: #98F527; margin-right: 5px;">●</span> Bot Yönetimi
@@ -374,12 +529,19 @@ async function handleAuth() {
 
 async function showLoggedInState(username) {
     isAdmin = (username === "197127");
+	isModerator = (username === "202185");
 if (isAdmin) {
     document.getElementById("admin-master-card").classList.remove("hidden");
     document.getElementById("admin-logs-card").classList.remove("hidden"); // Bunu ekle
 	document.getElementById("admin-bot-card").classList.remove("hidden"); // Yeni panel
+	document.getElementById("admin-user-management-card").classList.remove("hidden");
     renderAdminPanel();
     renderAdminLogsPanel(); // Bunu ekle
+	renderBotManagementPanel();
+	renderUserManagementPanel();
+}
+if (isModerator) {
+	document.getElementById("admin-bot-card").classList.remove("hidden"); // Yeni panel
 	renderBotManagementPanel();
 }
     try {
