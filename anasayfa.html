@@ -350,32 +350,39 @@ async function renderBotManagementPanel() {
             const isUserExpanded = expandedUsers.includes(userId);
             
             for (let deviceId in serversData) {
-                const device = serversData[deviceId];
-                const tekKey = `${userId}_tek`;
-                const cokKey = `${userId}_cok`;
-                const isOnline = device.Status === true;
+    const device = serversData[deviceId];
+    const tekKey = `${userId}_tek`;
+    const cokKey = `${userId}_cok`;
+    const isOnline = device.Status === true;
+    
+    // YENİ: Server değerine göre tıklanabilirlik kontrolü
+    const isServerActive = device.Server === true; 
 
-                serverRows += `
+    serverRows += `
     <tr>
         <td style="text-align:left; padding-left:15px; color:#e0e0e0; font-size:11px;">
             <span style="color: ${isOnline ? '#10b981' : '#ef4444'}; margin-right: 5px;">●</span> ${deviceId}
         </td>
         <td>
             <label class="switch">
-                <input type="checkbox" ${(device.UserList && device.UserList[tekKey] === true) ? "checked" : ""} 
+                <input type="checkbox" 
+                    ${(device.UserList && device.UserList[tekKey] === true) ? "checked" : ""} 
+                    ${!isServerActive ? "disabled" : ""} 
                     onchange="updateAdminUserBotStatus('${deviceId}', '${tekKey}', this.checked)">
-                <span class="slider"></span>
+                <span class="slider" style="${!isServerActive ? "opacity: 0.5; cursor: not-allowed;" : ""}"></span>
             </label>
         </td>
         <td>
             <label class="switch">
-                <input type="checkbox" ${(device.UserList && device.UserList[cokKey] === true) ? "checked" : ""} 
+                <input type="checkbox" 
+                    ${(device.UserList && device.UserList[cokKey] === true) ? "checked" : ""} 
+                    ${!isServerActive ? "disabled" : ""} 
                     onchange="updateAdminUserBotStatus('${deviceId}', '${cokKey}', this.checked)">
-                <span class="slider"></span>
+                <span class="slider" style="${!isServerActive ? "opacity: 0.5; cursor: not-allowed;" : ""}"></span>
             </label>
         </td>
     </tr>`;
-            }
+}
 
             usersHtml += `
                 <div style="margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; background: rgba(0,0,0,0.2); overflow:hidden;">
