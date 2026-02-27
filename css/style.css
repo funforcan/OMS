@@ -137,7 +137,7 @@ body {
     display: none;
     width: 100%;
     height: 100%;
-    padding: 20px;
+    padding: 10px;
     padding-top: 20px;
     overflow-y: auto;
     color: white;
@@ -275,7 +275,7 @@ input:disabled + .slider { background-color: #1a1a24; cursor: not-allowed; }
 .msg-time { font-size: 9px; opacity: 0.7; text-align: right; margin-top: 4px; }
 .shared-product-card { margin-top: 8px; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); color: #333 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 .tab-page { display: none; }
-.tab-page.active-page { display: flex !important; flex-direction: column; }
+.tab-page.active-page { display: flex !important; flex-direction: column; padding: 10px; Justify-content: 10px; }
 #chat-container { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-bottom: 180px !important; scroll-behavior: smooth; }
 .auth-container { background: #1d1d27; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); max-width: 360px; margin: 40px auto; color: #ffffff; font-family: 'Inter', sans-serif; border: 1px solid rgba(255, 255, 255, 0.05); }
 .auth-container h2 { text-align: center; font-weight: 700; margin-bottom: 25px; color: #00ABCC; letter-spacing: -0.5px; }
@@ -298,3 +298,22 @@ input:disabled + .slider { background-color: #1a1a24; cursor: not-allowed; }
 #basket-count-wrap:hover { background: rgba(0, 171, 204, 0.2); border-color: #00ABCC; transform: scale(1.02); }
 .fa-spin-custom { animation: spin 1s linear infinite; display: inline-block; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* Scrollbar'ı daha şık göstermek için (Opsiyonel) */
+#admin-bot-content::-webkit-scrollbar {
+    width: 5px;
+}
+#admin-bot-content::-webkit-scrollbar-thumb {
+    background: #00ABCC;
+    border-radius: 10px;
+}
+/* Kullanıcı yönetim tablosu için özel stiller */
+.user-mgmt-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #e0e0e0; }
+.user-mgmt-table th { color: #00ABCC; padding: 10px 5px; border-bottom: 1px solid rgba(0, 171, 204, 0.2); text-align: center; }
+.user-mgmt-table td { padding: 10px 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); text-align: center; }
+.user-mgmt-table .user-id { text-align: left; font-weight: bold; color: #ffffff; padding-left: 10px; }
+.refresh-all-btn { 
+    width: 100%; padding: 12px; background: #00ABCC; color: #1d1d27; 
+    border: none; border-radius: 8px; font-weight: bold; cursor: pointer; 
+    margin-top: 15px; transition: all 0.3s;
+}
+.refresh-all-btn:hover { background: #98F527; transform: scale(1.01); }
