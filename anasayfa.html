@@ -1039,8 +1039,6 @@ async function adminAction(action) {
 }
 async function renderAdminLogsPanel() {
     if (!isAdmin) return;
-    
-    // Eğer kullanıcı log akışını durdurduysa, fonksiyon hiçbir şeyi güncellemeden çıksın
     if (isLogUpdatePaused) return;
 
     const container = document.getElementById("admin-logs-card");
@@ -1052,46 +1050,48 @@ async function renderAdminLogsPanel() {
         
         let allLogsArray = [];
 
-        // 1. Tüm logları topla
+        // 1. Tüm cihazlardaki logları tek bir havuzda topla
         for (let deviceId in serverData) {
             const logs = serverData[deviceId].logs;
             if (logs) {
                 for (let logId in logs) {
+                    const logContent = (typeof logs[logId] === 'object') ? logs[logId].message : logs[logId];
+                    
+                    // Saati ayıklayalım (Format: "15:10:30 : ...")
+                    const timeMatch = logContent.match(/^(\d{2}:\d{2}:\d{2})/);
+                    const timeValue = timeMatch ? timeMatch[1] : "00:00:00";
+
                     allLogsArray.push({
                         deviceId: deviceId,
-                        rawContent: logs[logId]
+                        fullText: logContent,
+                        time: timeValue // Sıralama için kullanacağız
                     });
                 }
             }
         }
 
-        // 2. TERS SIRALAMA: En son eklenen log en üstte görünsün
-        // Firebase keyleri (push id) kronolojik olduğu için reverse yapıyoruz
-        allLogsArray.reverse();
+        // 2. SADECE SAATE GÖRE SIRALA (En yeni saat en üstte)
+        allLogsArray.sort((a, b) => b.time.localeCompare(a.time));
 
         let logRows = "";
         allLogsArray.forEach(item => {
-            let logText = (typeof item.rawContent === 'object') ? item.rawContent.message : item.rawContent;
+            const parts = item.fullText.split(':');
+            let formattedLine = "";
             
-            if (logText && typeof logText === 'string') {
-                const parts = logText.split(':');
-                let formattedLine = "";
-                
-                if (parts.length >= 4) {
-                    const timePart = `${parts[0].trim()}:${parts[1].trim()}:${parts[2].trim()}`;
-                    const sicilPart = parts[3].trim();
-                    const msgPart = parts.slice(4).join(':').trim();
-                    formattedLine = `<span style="color: #6b7280;">${timePart} - </span><span style="color: #ffffff;">${sicilPart}</span> : <span style="color: #e0e0e0;">${msgPart}</span>`;
-                } else {
-                    formattedLine = logText;
-                }
-
-                logRows += `
-                    <div style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 11px; line-height: 1.4;">
-                        <span style="color: #00ABCC; font-weight: bold; margin-right: 5px;">[${item.deviceId}]</span> 
-                        ${formattedLine}
-                    </div>`;
+            if (parts.length >= 4) {
+                const timePart = `${parts[0].trim()}:${parts[1].trim()}:${parts[2].trim()}`;
+                const sicilPart = parts[3].trim();
+                const msgPart = parts.slice(4).join(':').trim();
+                formattedLine = `<span style="color: #6b7280;">${timePart} - </span><span style="color: #ffffff;">${sicilPart}</span> : <span style="color: #e0e0e0;">${msgPart}</span>`;
+            } else {
+                formattedLine = item.fullText;
             }
+
+            logRows += `
+                <div style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 11px; line-height: 1.4;">
+                    <span style="color: #00ABCC; font-weight: bold; margin-right: 5px;">[${item.deviceId}]</span> 
+                    ${formattedLine}
+                </div>`;
         });
 
         if (allLogsArray.length === 0) {
@@ -1100,8 +1100,6 @@ async function renderAdminLogsPanel() {
 
         const currentRotation = isAdminLogsCollapsed ? "rotate(-90deg)" : "rotate(0deg)";
         const currentMaxHeight = isAdminLogsCollapsed ? "0px" : "400px";
-        
-        // Butonun o anki durumu (Duraklatıldıysa Kırmızı, Akıyorsa Yeşil/Mavi)
         const pauseBtnText = isLogUpdatePaused ? "AKışı BAŞLAT" : "AKışı DURDUR";
         const pauseBtnColor = isLogUpdatePaused ? "#10b981" : "#ef4444";
 
@@ -1113,7 +1111,6 @@ async function renderAdminLogsPanel() {
                     </div>
                     <div id="admin-logs-icon" style="transition: transform 0.3s ease; color: #f59e0b; font-size: 12px; transform: ${currentRotation};">▼</div>
                 </div>
-                
                 <div id="admin-logs-content" style="max-height: ${currentMaxHeight}; overflow-y: auto; transition: max-height 0.3s ease-in-out; background: #1a1a23;">
                     <div style="padding: 10px 15px; background: #14141b; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end;">
                         <button onclick="event.stopPropagation(); toggleLogPause()" style="background: transparent; border: 1px solid ${pauseBtnColor}; color: ${pauseBtnColor}; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold; text-transform: uppercase;">
