@@ -796,8 +796,23 @@ async function findMovementInfo(orderProductId, title) {
     document.getElementById("mainModal").style.display = "flex";
 
     try {
-        const lines = (await (await fetch('hareket.txt')).text()).split(/\r?\n/).filter(l => l.trim() !== "");
+        // 1. Kullanıcı başlığını al ve prefix oluştur (Örn: CB50)
+        const userDisplay = document.getElementById("user-display").innerText;
+        const prefix = userDisplay.substring(0, 4);
+        const fileName = `hareket-${prefix}.txt`;
+
+        const response = await fetch(fileName);
+        
+        // 2. Dosya kontrolü
+        if (!response.ok) {
+            modalBody.innerHTML = `<div style='color:#ef4444; padding:20px; font-weight:bold;'>(${prefix}) için hareket verisi bulunamadı!</div>`;
+            return;
+        }
+
+        const content = await response.text();
+        const lines = content.split(/\r?\n/).filter(l => l.trim() !== "");
         const matches = lines.filter(l => l.split('\t')[0] && l.split('\t')[0].trim() === orderProductId.trim());
+
         if (matches.length > 0) {
             let sum = 0, html = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size: 10px;"><tr style="background: #f3f4f6;"><th>KOD</th><th>ADET</th><th>TARİH</th><th>AÇIKLAMA</th></tr>`;
             matches.forEach(m => {
@@ -805,8 +820,12 @@ async function findMovementInfo(orderProductId, title) {
                 html += `<tr><td>${c[2]||'-'}</td><td style="font-weight:bold;">${c[3]||'-'}</td><td>${c[4]||'-'}</td><td>${c[5]||'-'}</td></tr>`;
             });
             modalBody.innerHTML = html + `<tr style="font-weight:bold;"><td style="text-align:right;">TOPLAM:</td><td>${sum}</td><td colspan="2"></td></tr></table></div>`;
-        } else modalBody.innerHTML = "<div style='color:red; padding:20px;'>Hareket bulunamadı!</div>";
-    } catch (e) { modalBody.innerHTML = "Dosya okuma hatası."; }
+        } else {
+            modalBody.innerHTML = "<div style='color:red; padding:20px;'>Bu dosyada hareket bulunamadı!</div>";
+        }
+    } catch (e) { 
+        modalBody.innerHTML = "Sistem hatası oluştu."; 
+    }
 }
 
 window.findSectionInfo = async function(orderProductId, title) {
@@ -816,13 +835,38 @@ window.findSectionInfo = async function(orderProductId, title) {
     document.getElementById("mainModal").style.display = "flex";
 
     try {
-        const matches = (await (await fetch('section.txt')).text()).split(/\r?\n/).filter(l => l.split('\t')[0].trim() === orderProductId.trim());
+        // 1. Kullanıcı başlığını al ve prefix oluştur
+        const userDisplay = document.getElementById("user-display").innerText;
+        const prefix = userDisplay.substring(0, 4);
+        const fileName = `section-${prefix}.txt`;
+
+        const response = await fetch(fileName);
+
+        // 2. Dosya kontrolü
+        if (!response.ok) {
+            modalBody.innerHTML = `<div style='color:#ef4444; padding:20px; font-weight:bold;'>(${prefix}) için section verisi bulunamadı!</div>`;
+            return;
+        }
+
+        const content = await response.text();
+        const matches = content.split(/\r?\n/).filter(l => {
+            const cols = l.split('\t');
+            return cols[0] && cols[0].trim() === orderProductId.trim();
+        });
+
         if (matches.length > 0) {
             let html = `<table style="width:100%; font-size: 11px; border-collapse: collapse;"><tr style="background:#eee;"><th>DEPO</th><th>SEC</th><th>ADET</th></tr>`;
-            matches.forEach(m => { const c = m.split('\t'); html += `<tr><td>${c[3]}</td><td style="font-weight:bold; color:blue;">${c[4]}</td><td>${c[5]}</td></tr>`; });
+            matches.forEach(m => { 
+                const c = m.split('\t'); 
+                html += `<tr><td>${c[3]}</td><td style="font-weight:bold; color:blue;">${c[4]}</td><td>${c[5]}</td></tr>`; 
+            });
             modalBody.innerHTML = html + `</table>`;
-        } else modalBody.innerHTML = "<div style='color:red; padding:20px;'>Section bulunamadı.</div>";
-    } catch (e) { modalBody.innerHTML = "Dosya okuma hatası."; }
+        } else {
+            modalBody.innerHTML = "<div style='color:red; padding:20px;'>Bu dosyada section bulunamadı.</div>";
+        }
+    } catch (e) { 
+        modalBody.innerHTML = "Sistem hatası oluştu."; 
+    }
 }
 
 function startSocialMode() { loadMessages(); socialInterval = setInterval(loadMessages, 3000); }
